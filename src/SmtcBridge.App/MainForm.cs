@@ -28,8 +28,8 @@ internal sealed class MainForm : Form
         Text = "PotPlayer SMTC Bridge";
         StartPosition = FormStartPosition.CenterScreen;
         // 内容列固定 660，再加卡片与滚动条留白；高度留足（下方还有日志框）
-        ClientSize = new Size(880, 880);
-        MinimumSize = new Size(840, 640);
+        ClientSize = new Size(1200, 910);
+        MinimumSize = new Size(900, 640);
         BackColor = Theme.Window;
         ForeColor = Theme.Text;
         Font = Theme.FontBase;
