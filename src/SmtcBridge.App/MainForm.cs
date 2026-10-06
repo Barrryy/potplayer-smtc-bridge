@@ -716,8 +716,6 @@ internal sealed class MainForm : Form
         grid.Controls.Add(row2, 0, 1);
         card.AddRow(grid, 0);
 
-        launch.Text = "MARK-A";   // 临时标记：确认这段代码有没有被编译进去（马上删）
-
         // 重排必须放在 AddRow 之后：翻译就在 AddRow 内部发生，
         // 按钮是 AutoSize 的，翻译变宽后容器不会重算位置 —— 放在 AddRow 之前会被覆盖，
         // 这就是按钮重叠反复改不好的原因。
