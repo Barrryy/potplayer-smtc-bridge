@@ -290,7 +290,25 @@ internal sealed class MainForm : Form
     {
         var result = MetaRules.Apply(_sample.Text, _pattern.Text);
         _preview.ForeColor = result.Matched ? Theme.Good : Theme.Warn;
-        _preview.Text = "▸ " + result.Note + (_tagFirst.Checked ? "" : "（当前为仅文件名模式）");
+
+        // 预览串：字段分隔符统一用「：」，标签英文在前；先换长标签，否则「专辑歌手」
+        // 会被「专辑」先吃掉。
+        var note = result.Note
+            .Replace("匹配成功：", "Matched · 匹配成功：")
+            .Replace("专辑歌手=", "Album artist：")
+            .Replace("标题=", "Title：")
+            .Replace("歌手=", "Artist：")
+            .Replace("专辑=", "Album：")
+            .Replace("音轨=", "Track：")
+            .Replace("文件名为空", "Filename is empty · 文件名为空")
+            .Replace("规则中没有占位符，整体作为标题",
+                     "No placeholder in the pattern; the whole name is used as the title · 规则中没有占位符，整体作为标题")
+            .Replace("规则没匹配上，回退为「整体作为标题」",
+                     "Pattern did not match; the whole name is used as the title · 规则没匹配上，回退为「整体作为标题」")
+            .Replace("规则没捕获到任何字段，回退为「整体作为标题」",
+                     "No field captured; the whole name is used as the title · 规则没捕获到任何字段，回退为「整体作为标题」");
+
+        _preview.Text = "▸ " + note + (_tagFirst.Checked ? "" : "（当前为仅文件名模式）");
         _preview.BackColor = Theme.Surface;
     }
 
