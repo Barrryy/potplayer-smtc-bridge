@@ -370,13 +370,15 @@ internal sealed class MainForm : Form
             + "代价是常驻一个隐藏进程、并且需要开机自启。",
             Theme.TextDim, Theme.FontSmall, 660), 6);
 
-        var launch = Theme.GhostButton("启动并注入");
+        // 先翻译再算坐标：按钮是 AutoSize，下面用 launch.Right 定位，
+        // 若此时文字还没翻译（短中文），坐标就按旧宽度算 -> 翻译后互相压住。
+        var launch = Theme.GhostButton(Loc.T("启动并注入"));
         launch.Click += (_, _) => LaunchAndInject();
 
-        var inject = Theme.GhostButton("注入到运行中的 PotPlayer");
+        var inject = Theme.GhostButton(Loc.T("注入到运行中的 PotPlayer"));
         inject.Click += (_, _) => InjectRunning();
 
-        var watch = Theme.GhostButton("后台监听");
+        var watch = Theme.GhostButton(Loc.T("后台监听"));
         watch.Click += (_, _) =>
         {
             var process = Injector.StartWatch();
@@ -385,7 +387,7 @@ internal sealed class MainForm : Form
                 : $"监听已启动（PID {process.Id}）：PotPlayer 启动时自动注入。");
         };
 
-        var openLog = Theme.GhostButton("打开日志目录");
+        var openLog = Theme.GhostButton(Loc.T("打开日志目录"));
         openLog.Click += (_, _) =>
         {
             Directory.CreateDirectory(AppPaths.LogDir);
@@ -400,7 +402,7 @@ internal sealed class MainForm : Form
 
         var row1 = new Panel
         {
-            Width = 660,
+            Width = 1000,
             Height = 44,
             BackColor = Theme.Surface,
             Margin = new Padding(0),
@@ -418,7 +420,7 @@ internal sealed class MainForm : Form
 
         var row2 = new Panel
         {
-            Width = 660,
+            Width = 1000,
             Height = 44,
             BackColor = Theme.Surface,
             Margin = new Padding(0),
@@ -430,7 +432,7 @@ internal sealed class MainForm : Form
 
         if (_onExit is not null)
         {
-            var exit = Theme.GhostButton("退出后台程序");
+            var exit = Theme.GhostButton(Loc.T("退出后台程序"));
             exit.ForeColor = Theme.Bad;
             exit.Location = new Point(openLog.Right + 8, 0);
 
@@ -712,6 +714,8 @@ internal sealed class MainForm : Form
         grid.Controls.Add(row, 0, 0);
         grid.Controls.Add(row2, 0, 1);
         card.AddRow(grid, 0);
+
+        launch.Text = "MARK-A";   // 临时标记：确认这段代码有没有被编译进去（马上删）
 
         // 重排必须放在 AddRow 之后：翻译就在 AddRow 内部发生，
         // 按钮是 AutoSize 的，翻译变宽后容器不会重算位置 —— 放在 AddRow 之前会被覆盖，
