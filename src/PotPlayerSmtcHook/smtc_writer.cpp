@@ -424,7 +424,7 @@ DWORD WINAPI TagReaderThread(LPVOID) {
             }
             LeaveCriticalSection(&g_lock);
             LogF("[tags] %s: title=%s artist=%s album=%s track=%d genres=%s",
-                 meta.fromTags ? "读到了标签" : "无标签，用文件名", WideToUtf8(meta.title.c_str()).c_str(),
+        meta.fromTags ? "read tags" : "no tags, using filename", WideToUtf8(meta.title.c_str()).c_str(),
                  WideToUtf8(meta.artist.c_str()).c_str(), WideToUtf8(meta.album.c_str()).c_str(),
                  meta.trackNumber, WideToUtf8(meta.genre.c_str()).c_str());
         }
