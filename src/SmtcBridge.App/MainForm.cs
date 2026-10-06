@@ -399,24 +399,32 @@ internal sealed class MainForm : Form
         // 新安装方式：IFEO 启动注入（不改动 PotPlayer 任何文件）
         if (IfeoInstaller.IsInstalledByUs(path))
         {
-            _patchState.Text = $"状态：启动注入已安装 —— 文件在 {AppPaths.InstallDir}，本程序目录随便挪";
+            _patchState.Text =
+                $"State: injection installed — files live in {AppPaths.InstallDir}; "
+                + "this program folder can be moved or deleted freely.\n"
+                + $"状态：启动注入已安装 —— 文件位于 {AppPaths.InstallDir}，本程序目录可随意移动或删除。";
             _patchState.ForeColor = Theme.Good;
             if (PePatcher.IsPatched(path))
             {
-                _patchState.Text += "（注意：主程序还留着旧补丁，请点「卸载」后手动还原）";
+                _patchState.Text += "\nNote: the old executable patch is still applied — uninstall it and restore manually."
+                                  + "\n注意：主程序仍残留旧补丁，请卸载后手动还原。";
                 _patchState.ForeColor = Theme.Warn;
             }
             return;
         }
         if (IfeoInstaller.StaleDebugger(path) is { Length: > 0 } stale)
         {
-            _patchState.Text = $"状态：注册表还指向 {stale} —— 点「卸载」再「安装」就能修正";
+            _patchState.Text =
+                $"State: the registry still points at {stale} — click Uninstall, then Install, to fix it.\n"
+                + $"状态：注册表仍指向 {stale} —— 点「卸载」再「安装」即可修正。";
             _patchState.ForeColor = Theme.Warn;
             return;
         }
         if (IfeoInstaller.ForeignDebugger(path) is { Length: > 0 } other)
         {
-            _patchState.Text = $"状态：未安装 —— 但 IFEO 里已有别的 Debugger：{other}";
+            _patchState.Text =
+                $"State: not installed — but IFEO already carries another Debugger: {other}\n"
+                + $"状态：未安装 —— 但 IFEO 中已有其他 Debugger：{other}";
             _patchState.ForeColor = Theme.Warn;
             return;
         }

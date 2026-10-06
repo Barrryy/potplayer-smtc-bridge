@@ -14,6 +14,7 @@ internal static class Loc
     {
         // 窗口 / 向导
         ["PotPlayer SMTC Bridge — 首次使用"] = "PotPlayer SMTC Bridge — First run  ·  首次使用",
+        ["欢迎使用"] = "Welcome  ·  欢迎使用",
         ["三步完成注册，之后就能让 PotPlayer 向 Windows 输出完整媒体信息"] =
             "Three steps and PotPlayer will feed Windows the full media info  ·  三步完成注册，之后就能让 PotPlayer 向 Windows 输出完整媒体信息",
         ["① 指定 PotPlayer"] = "① Locate PotPlayer  ·  指定 PotPlayer",
@@ -119,13 +120,88 @@ internal static class Loc
             "Injection removed: PotPlayer is back to stock.",
     };
 
-    /// <summary>查表；没有收录就原样返回。</summary>
+    /// <summary>
+    /// 长段落按「前缀」识别：这些说明本来就是多段字面量拼起来的，逐字对齐容易失手；
+    /// 而且这一版要收紧冗长说明，所以前缀命中就整条换成精简后的双语版本。
+    /// </summary>
+    private static readonly (string Prefix, string Text)[] Paragraphs =
+    {
+        ("在 Windows 里登记一条启动规则（IFEO），每次启动 PotPlayer 时",
+         "Registers a Windows startup rule (IFEO): on every PotPlayer launch the injector loads this tool's module, then exits.\n"
+         + "PotPlayer's own files are never modified.\n"
+         + "在 Windows 中登记一条 IFEO 启动规则：每次启动 PotPlayer 时加载本注入模块后即退出，不改动 PotPlayer 的任何文件。"),
+        ("下一步在主界面点「安装启动注入」",
+         "Next: click \"Install injection\" in the main window.\n"
+         + "下一步：在主界面点「安装启动注入」。"),
+        ("每次启动 PotPlayer 时自动注入，不碰它的任何文件，也不需要常驻进程。",
+         "Injects on every PotPlayer launch without touching its files and without a resident process.\n"
+         + "每次启动 PotPlayer 时自动注入，不改动其文件，也无需常驻进程。"),
+        ("备选：用后台进程自动注入（需要开机自启）",
+         "Alternative: background auto-inject (requires auto-start)\n"
+         + "备选：后台进程自动注入（需开机自启）"),
+        ("程序在后台静默待命：没有窗口、没有托盘图标。每次 PotPlayer 启动时自动注入。",
+         "Runs silently in the background: no window, no tray icon.\n"
+         + "后台静默运行：无窗口、无托盘图标，PotPlayer 每次启动时自动注入。"),
+        ("代价是常驻一个隐藏进程、并且需要开机自启。",
+         "Trade-off: one hidden resident process plus a startup entry.\n"
+         + "代价：常驻一个隐藏进程，并需要开机自启。"),
+        ("PotPlayer 默认只把文件名交给 Windows",
+         "PotPlayer only hands Windows the file name by default — title, artist, album, track and genre stay empty.\n"
+         + "PotPlayer 默认只把文件名交给 Windows，其余字段为空。"),
+        ("这个工具会补齐这些字段",
+         "This tool fills them in, so the system media panel, Discord and lyric tools read the correct metadata.\n"
+         + "本工具补齐这些字段，供系统媒体面板、Discord、歌词工具读取。"),
+        ("文件名伪正则：%title% %artist% %album% %albumArtist% %track% 是占位符，",
+         "Filename pattern: %title% %artist% %album% %albumArtist% %track% are placeholders; every other character matches literally (%% = a literal percent sign).\n"
+         + "文件名伪正则：上述为占位符，其余字符按字面量匹配，%% 为字面量百分号。"),
+        ("匹配时按顺序查找字面量，它之前的文本归给上一个占位符，末尾占位符吃掉剩余全部。",
+         "Literals are searched in order; the text before a literal belongs to the previous placeholder, and the last placeholder takes the remainder.\n"
+         + "按顺序查找字面量：其之前的文本归属上一个占位符，末尾占位符取剩余全部。"),
+        ("其余字符按字面量匹配，%% 表示一个字面量百分号。",
+         "Every other character matches literally; %% is a literal percent sign.\n"
+         + "其余字符按字面量匹配，%% 为字面量百分号。"),
+        ("把完整的媒体信息交给 Windows",
+         "Delivers the complete media metadata to Windows, for the system media panel, Discord and lyric tools.\n"
+         + "向 Windows 提交完整媒体信息，供系统媒体面板、Discord 与歌词工具读取。"),
+        ("本程序目录随便挪", ""),   // 动态串由 Loc.Fmt 处理，这里只是兜底
+        ("装一次之后：无后台进程、无开机启动项、重启照样生效、PotPlayer 自己更新也不用重装。",
+         "After one install: no background process, no startup entry, survives reboots and PotPlayer updates.\n"
+         + "安装一次后：无后台进程、无开机启动项，重启与 PotPlayer 更新后均继续生效。"),
+    };
+
+    /// <summary>查表（先精确、再长段落前缀）；都没有就原样返回。</summary>
     public static string T(string? text)
     {
         if (string.IsNullOrEmpty(text)) return text ?? string.Empty;
-        if (!Map.TryGetValue(text, out var hit)) return text;
-        // 带 {xxx} 占位符的是「模板」，由调用方自己替换
-        return hit;
+        if (Map.TryGetValue(text, out var hit)) return hit;
+        foreach (var (prefix, replacement) in Paragraphs)
+        {
+            if (prefix.Length > 0 && replacement.Length > 0 &&
+                text.StartsWith(prefix, StringComparison.Ordinal))
+                return replacement;
+        }
+        return text;
+    }
+
+    /// <summary>带占位符的模板：Loc.Fmt(中文模板, ("{dir}", 实际值))。</summary>
+    public static string Fmt(string template, params (string Key, string Value)[] args)
+    {
+        var text = T(template);
+        foreach (var (key, value) in args) text = text.Replace(key, value);
+        return text;
+    }
+
+    /// <summary>
+    /// 全局兜底：启动时挂到 Application.Idle 上，每次空闲把「当前所有已打开窗体」的控件树过一遍。
+    /// 直接挂在窗体上的标题、按钮（没走 Card.AddRow 的那些）也能覆盖；
+    /// 已经翻译过的文本不再是词典键，重复扫描是空操作。
+    /// </summary>
+    public static void AutoApply()
+    {
+        Application.Idle += (_, _) =>
+        {
+            foreach (Form form in Application.OpenForms) ApplyDeep(form);
+        };
     }
 
     /// <summary>把控件树里所有文本控件的 Text 过一遍词典。</summary>

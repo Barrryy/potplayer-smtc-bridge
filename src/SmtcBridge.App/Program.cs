@@ -6,6 +6,7 @@ internal static class Program
     private static void Main(string[] args)
     {
         ApplicationConfiguration.Initialize();
+        Loc.AutoApply();
 
         // 提权后的一次性操作：给 PotPlayer 打导入表补丁 / 还原
         // 新的安装方式：IFEO 启动注入（不改动 PotPlayer 的任何文件）
