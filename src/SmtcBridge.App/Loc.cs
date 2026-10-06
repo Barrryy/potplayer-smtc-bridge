@@ -59,7 +59,7 @@ internal static class Loc
         // 操作
         ["操作"] = "Actions  ·  操作",
         ["启动并注入"] = "Launch & inject  ·  启动并注入",
-        ["注入到已运行的 PotPlayer"] = "Inject into running PotPlayer  ·  注入到已运行的 PotPlayer",
+        ["注入到运行中的 PotPlayer"] = "Inject into running PotPlayer  ·  注入到运行中的 PotPlayer",
         ["后台监听"] = "Background watch  ·  后台监听",
         ["打开日志目录"] = "Open log folder  ·  打开日志目录",
         ["退出后台程序"] = "Quit background app  ·  退出后台程序",

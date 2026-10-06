@@ -374,7 +374,7 @@ internal sealed class MainForm : Form
 
         var launch = Theme.GhostButton("启动并注入");
         launch.Click += (_, _) => LaunchAndInject();
-        var inject = Theme.GhostButton("注入到已运行的");
+        var inject = Theme.GhostButton("注入到运行中的 PotPlayer");
         inject.Click += (_, _) => InjectRunning();
         var watch = Theme.GhostButton("后台监听");
         watch.Click += (_, _) =>
