@@ -23,7 +23,7 @@ internal sealed class FirstRunForm : Form
         FormBorderStyle = FormBorderStyle.FixedDialog;
         MaximizeBox = false;
         MinimizeBox = false;
-        ClientSize = new Size(720, 540);
+        ClientSize = new Size(900, 675);
         BackColor = Theme.Window;
         ForeColor = Theme.Text;
         Font = Theme.FontBase;
@@ -88,7 +88,7 @@ internal sealed class FirstRunForm : Form
         };
         panel.Controls.Add(Theme.Label("欢迎使用", Theme.Text, Theme.FontTitle));
         panel.Controls.Add(Theme.Label(
-            "三步完成注册，之后就能让 PotPlayer 向 Windows 输出完整媒体信息",
+            "完成注入，使 PotPlayer 向 Windows 输出完整媒体信息",
             Theme.TextDim, Theme.FontSmall));
         return panel;
     }
@@ -97,7 +97,7 @@ internal sealed class FirstRunForm : Form
     {
         var card = new Card("它做什么");
         card.AddRow(Theme.Label(
-            "PotPlayer 默认只把文件名交给 Windows：歌名、歌手、专辑、音轨号、流派都是空的。\n"
+            "PotPlayer 默认只把文件名交给 Windows\n"
             + "这个工具会补齐这些字段，让系统媒体面板、Discord、歌词工具都能读到正确信息。",
             Theme.Text, Theme.FontBase, 660), 0);
         return card;
@@ -105,7 +105,7 @@ internal sealed class FirstRunForm : Form
 
     private Card BuildPathCard()
     {
-        var card = new Card("① 指定 PotPlayer");
+        var card = new Card("① 定位 PotPlayer");
         card.AddRow(Field("主程序路径", _potPlayer), 0);
 
         var row = Theme.Row(Theme.Surface);
@@ -127,7 +127,7 @@ internal sealed class FirstRunForm : Form
             var found = Injector.DetectPotPlayer();
             if (found is null)
             {
-                _componentState.Text = "没有自动找到 PotPlayer，请手动浏览选择。";
+                _componentState.Text = "未找到 PotPlayer，请手动浏览选择。";
                 _componentState.ForeColor = Theme.Warn;
                 return;
             }
@@ -145,12 +145,11 @@ internal sealed class FirstRunForm : Form
 
     private Card BuildOptionCard()
     {
-        var card = new Card("② 启动方式");
-        card.AddRow(_autoStart, 0);
+        var card = new Card("② 注入方式");
         card.AddRow(Theme.Label(
-            "下一步在主界面点「安装启动注入」：登记一条 IFEO 启动规则，"
-            + "每次启动 PotPlayer 时自动注入，不碰它的任何文件，也不需要常驻进程。\n"
-            + "不想要这个规则时，点「卸载启动注入」即可，PotPlayer 恢复原样。",
+            "点「安装启动注入」后，每次启动 PotPlayer 都会自动注入："
+            + "不改动它的任何文件，不需要常驻进程，也不需要开机自启。\n"
+            + "想撤销时点「卸载启动注入」，PotPlayer 恢复原样。",
             Theme.TextDim, Theme.FontSmall, 660), 8);
         return card;
     }
@@ -160,7 +159,7 @@ internal sealed class FirstRunForm : Form
         var row = Theme.Row(Theme.Window);
         row.FlowDirection = FlowDirection.RightToLeft;
         row.Margin = new Padding(0, 6, 0, 0);
-        var finish = Theme.PrimaryButton("完成注册");
+        var finish = Theme.PrimaryButton("继续注入");
         finish.Click += (_, _) => Finish();
         var cancel = Theme.GhostButton("退出");
         cancel.Click += (_, _) =>

@@ -15,22 +15,22 @@ internal static class Loc
         // 窗口 / 向导
         ["PotPlayer SMTC Bridge — 首次使用"] = "PotPlayer SMTC Bridge — First run  ·  首次使用",
         ["欢迎使用"] = "Welcome  ·  欢迎使用",
-        ["三步完成注册，之后就能让 PotPlayer 向 Windows 输出完整媒体信息"] =
-            "Three steps and PotPlayer will feed Windows the full media info  ·  三步完成注册，之后就能让 PotPlayer 向 Windows 输出完整媒体信息",
-        ["① 指定 PotPlayer"] = "① Locate PotPlayer  ·  指定 PotPlayer",
+        ["完成注入，使 PotPlayer 向 Windows 输出完整媒体信息"] =
+            "Complete the setup so PotPlayer delivers full media metadata to Windows  ·  完成注入，使 PotPlayer 向 Windows 输出完整媒体信息",
+        ["① 定位 PotPlayer"] = "① Locate PotPlayer  ·  ① 定位 PotPlayer",
         ["② 启动方式"] = "② Startup mode  ·  启动方式",
         ["主程序路径"] = "Player path  ·  主程序路径",
         ["自动检测"] = "Auto-detect  ·  自动检测",
         ["重新检测 PotPlayer"] = "Re-detect  ·  重新检测 PotPlayer",
         ["浏览…"] = "Browse…  ·  浏览…",
         ["选择 PotPlayer 主程序"] = "Select the PotPlayer executable  ·  选择 PotPlayer 主程序",
-        ["完成注册"] = "Finish  ·  完成注册",
+        ["继续注入"] = "Continue  ·  继续注入",
         ["保存并应用"] = "Save & apply  ·  保存并应用",
         ["退出"] = "Exit  ·  退出",
         ["路径无效"] = "Invalid path  ·  路径无效",
         ["指定的 PotPlayer 路径不存在。"] = "That PotPlayer path does not exist.  ·  指定的 PotPlayer 路径不存在。",
-        ["没有自动找到 PotPlayer，请手动浏览选择。"] =
-            "PotPlayer was not found automatically — please pick it manually.  ·  没有自动找到 PotPlayer，请手动浏览选择。",
+        ["未找到 PotPlayer，请手动浏览选择。"] =
+            "PotPlayer was not found — please pick it manually.  ·  未找到 PotPlayer，请手动浏览选择。",
         ["还没定位到 PotPlayer，请先点「重新检测 PotPlayer」。"] =
             "PotPlayer is not located yet — click \"Re-detect\" first.  ·  还没定位到 PotPlayer，请先点「重新检测 PotPlayer」。",
         ["✔ 组件就位：PotPlayerSmtcHook.dll 与 SmtcLoader.exe 都在本程序目录"] =
@@ -130,9 +130,11 @@ internal static class Loc
          "Registers a Windows startup rule (IFEO): on every PotPlayer launch the injector loads this tool's module, then exits.\n"
          + "PotPlayer's own files are never modified.\n"
          + "在 Windows 中登记一条 IFEO 启动规则：每次启动 PotPlayer 时加载本注入模块后即退出，不改动 PotPlayer 的任何文件。"),
-        ("下一步在主界面点「安装启动注入」",
-         "Next: click \"Install injection\" in the main window.\n"
-         + "下一步：在主界面点「安装启动注入」。"),
+        ("点「安装启动注入」后",
+         "Once installed, PotPlayer is injected on every launch: no files touched, no resident process, no startup entry.\n"
+         + "点「安装启动注入」后，每次启动 PotPlayer 都会自动注入：不改动它的任何文件，不需要常驻进程，也不需要开机自启。"),
+        ("② 注入方式",
+         "② Injection mode  ·  ② 注入方式"),
         ("每次启动 PotPlayer 时自动注入，不碰它的任何文件，也不需要常驻进程。",
          "Injects on every PotPlayer launch without touching its files and without a resident process.\n"
          + "每次启动 PotPlayer 时自动注入，不改动其文件，也无需常驻进程。"),
@@ -146,8 +148,9 @@ internal static class Loc
          "Trade-off: one hidden resident process plus a startup entry.\n"
          + "代价：常驻一个隐藏进程，并需要开机自启。"),
         ("PotPlayer 默认只把文件名交给 Windows",
-         "PotPlayer only hands Windows the file name by default — title, artist, album, track and genre stay empty.\n"
-         + "PotPlayer 默认只把文件名交给 Windows，其余字段为空。"),
+         "PotPlayer only hands Windows the file name by default; this tool fills in the rest of the metadata,\n"
+         + "so the system media panel, Discord and lyric tools read the correct info.\n"
+         + "PotPlayer 默认只把文件名交给 Windows；本工具补齐其余字段，供系统媒体面板、Discord 与歌词工具读取。"),
         ("这个工具会补齐这些字段",
          "This tool fills them in, so the system media panel, Discord and lyric tools read the correct metadata.\n"
          + "本工具补齐这些字段，供系统媒体面板、Discord、歌词工具读取。"),
