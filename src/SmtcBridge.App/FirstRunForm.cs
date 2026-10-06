@@ -221,7 +221,9 @@ internal sealed class FirstRunForm : Form
         var path = _potPlayer.Text.Trim();
         if (path.Length > 0 && !File.Exists(path))
         {
-            MessageBox.Show(this, "指定的 PotPlayer 路径不存在。", "路径无效",
+            MessageBox.Show(this,
+                "That PotPlayer path does not exist.  ·  指定的 PotPlayer 路径不存在。",
+                "Invalid path  ·  路径无效",
                 MessageBoxButtons.OK, MessageBoxIcon.Warning);
             return;
         }

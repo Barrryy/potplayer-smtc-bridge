@@ -42,8 +42,44 @@ static void LogOpen(void)
     g_log = _wfopen(dir, L"a, ccs=UTF-8");
 }
 
+// 日志一律输出英文：文案在这里按「格式串」整条映射，支持 %lu / %ls 占位符。
+// 表里没有的原样输出，所以漏翻最多是保持中文，不会写坏。
+static const wchar_t *TranslateLog(const wchar_t *fmt)
+{
+    struct Entry { const wchar_t *zh; const wchar_t *en; };
+    static const Entry kTable[] = {
+        {L"OpenProcess 失败: %lu\n", L"OpenProcess failed: %lu\n"},
+        {L"VirtualAllocEx 失败: %lu\n", L"VirtualAllocEx failed: %lu\n"},
+        {L"WriteProcessMemory 失败: %lu\n", L"WriteProcessMemory failed: %lu\n"},
+        {L"CreateRemoteThread 失败: %lu\n", L"CreateRemoteThread failed: %lu\n"},
+        {L"LoadLibraryW 返回 0x%08lX\n", L"LoadLibraryW returned 0x%08lX\n"},
+        {L"等待远线程超时\n", L"remote thread timed out\n"},
+        {L"没有目标程序参数（本程序由 IFEO 自动拉起，一般不需要手动运行）\n",
+         L"no target argument - this exe is launched automatically by IFEO\n"},
+        {L"目标: %ls\n", L"target: %ls\n"},
+        {L"注入模块: %ls\n", L"module: %ls\n"},
+        {L"命令行: %ls\n", L"command line: %ls\n"},
+        {L"CreateProcess 失败: %lu（不重试，避免 IFEO 递归）\n",
+         L"CreateProcess failed: %lu (not retried - it would recurse through IFEO)\n"},
+        {L"已创建: pid=%lu\n", L"created: pid=%lu\n"},
+        {L"已脱离调试\n", L"debugger detached\n"},
+        {L"DebugActiveProcessStop 失败: %lu\n", L"DebugActiveProcessStop failed: %lu\n"},
+        {L"找不到 %ls，跳过注入（PotPlayer 照常启动）\n",
+         L"module not found: %ls - skipping injection (PotPlayer still starts)\n"},
+        {L"等待加载器超时，仍尝试注入\n", L"loader wait timed out, injecting anyway\n"},
+        {L"注入成功\n", L"inject ok\n"},
+        {L"注入失败\n", L"inject failed\n"},
+        {L"加载器就绪\n", L"loader ready\n"},
+    };
+    for (const Entry &e : kTable) {
+        if (wcscmp(fmt, e.zh) == 0) return e.en;
+    }
+    return fmt;
+}
+
 static void Log(const wchar_t *fmt, ...)
 {
+    fmt = TranslateLog(fmt);
     if (!g_log) return;
     va_list ap;
     va_start(ap, fmt);

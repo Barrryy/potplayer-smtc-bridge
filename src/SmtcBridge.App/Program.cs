@@ -84,7 +84,8 @@ internal static class Program
         catch (Exception ex)
         {
             if (quiet) Console.Error.WriteLine(ex.Message);
-            else MessageBox.Show(ex.Message, "操作失败", MessageBoxButtons.OK, MessageBoxIcon.Error);
+            else MessageBox.Show(ex.Message, "Operation failed  ·  操作失败",
+                                 MessageBoxButtons.OK, MessageBoxIcon.Error);
             return 1;
         }
     }
