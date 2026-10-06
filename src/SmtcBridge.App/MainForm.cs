@@ -408,14 +408,15 @@ internal sealed class MainForm : Form
             Margin = new Padding(0),
         };
 
-        launch.Location = new Point(0, 0);
-        inject.Location = new Point(launch.Right + 8, 0);
-        watch.Location = new Point(inject.Right + 8, 0);
-
         row1.Controls.Add(launch);
         row1.Controls.Add(inject);
         row1.Controls.Add(watch);
 
+        // 坐标必须在「加进容器之后」再算：按钮是 AutoSize，未入容器时宽度还是默认值，
+        // 那时取 Right 会把后一颗按钮放到 83px 处（翻译前后都错）。
+        launch.Location = new Point(0, 0);
+        inject.Location = new Point(launch.Right + 8, 0);
+        watch.Location = new Point(inject.Right + 8, 0);
         // ==================== 第二排 ====================
 
         var row2 = new Panel
