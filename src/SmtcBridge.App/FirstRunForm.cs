@@ -9,8 +9,6 @@ internal sealed class FirstRunForm : Form
     private readonly BridgeConfig _config;
     private readonly FlowLayoutPanel _stack = new();
     private readonly DarkInput _potPlayer = new();
-    private readonly CheckBox _autoStart =
-        Theme.CheckBox("备选：用后台进程自动注入（需要开机自启）", false);
     private readonly Label _componentState =
         Theme.Label("", Theme.TextDim, Theme.FontSmall, 660);
 
@@ -46,9 +44,6 @@ internal sealed class FirstRunForm : Form
         _potPlayer.Text = string.IsNullOrEmpty(_config.PotPlayerPath)
             ? Injector.DetectPotPlayer() ?? ""
             : _config.PotPlayerPath;
-        // 默认不勾：推荐走主界面里的「安装到 PotPlayer」——改一次主程序，零常驻。
-        // 只有不想改动主程序时才需要这个后台方案。
-        _autoStart.Checked = _config.AutoStart || Injector.IsAutoStartEnabled();
         RefreshComponentState();
     }
 
@@ -169,7 +164,9 @@ internal sealed class FirstRunForm : Form
             BackColor = Theme.Surface,
             Margin = new Padding(0),
             MinimumSize = new Size(320, input.Height),
-            Anchor = AnchorStyles.Left | AnchorStyles.Right,
+            Width = 660,
+            MaximumSize = new Size(660, input.Height),
+            Anchor = AnchorStyles.Left,
         };
 
         var caption = Theme.Label(Loc.T(label), Theme.TextDim);
@@ -180,10 +177,11 @@ internal sealed class FirstRunForm : Form
         row.Controls.Add(caption);
 
         input.Location = new Point(captionWidth, 0);
+        input.Width = Math.Max(40, Math.Min(row.Width, 660) - captionWidth);
         row.Controls.Add(input);
         row.Resize += (_, _) =>
         {
-            var width = row.Width - captionWidth;
+            var width = Math.Min(row.Width, 660) - captionWidth;
             if (width > 40) input.Width = width;
         };
         return row;
@@ -217,7 +215,6 @@ internal sealed class FirstRunForm : Form
         }
 
         _config.PotPlayerPath = path;
-        _config.AutoStart = _autoStart.Checked;
         _config.Registered = true;
         _config.TagFirst = true;
         _config.NamePattern = BridgeConfig.DefaultPattern;
@@ -230,7 +227,6 @@ internal sealed class FirstRunForm : Form
             catch { /* 写不了也不影响启动 */ }
         }
 
-        if (_autoStart.Checked) Injector.SetAutoStart(true);
 
         DialogResult = DialogResult.OK;
         Close();
