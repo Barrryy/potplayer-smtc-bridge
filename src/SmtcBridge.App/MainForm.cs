@@ -586,7 +586,7 @@ internal sealed class MainForm : Form
         row.Controls.Add(launch);
         row.Controls.Add(inject);
         row.Controls.Add(watch);
-
+        row.Controls.Add(openLog);
         if (_onExit is not null)
         {
             var exit = Theme.GhostButton("退出后台程序");
@@ -596,37 +596,16 @@ internal sealed class MainForm : Form
                 AppendLog("正在退出后台进程…");
                 _onExit();
             };
+            row.Controls.Add(exit);
         }
 
-        // 第二排：打开日志目录 / 退出后台程序。
-        // 两排装进一个竖向容器再加进卡片：直接 AddRow 两次在 AutoSize 的
-        // TableLayoutPanel 里不一定分行（实测会挤在同一排）。
-        var row2 = Theme.Row(Theme.Surface);
-        row2.Controls.Add(openLog);
-        if (_onExit is not null)
-        {
-            var exit2 = Theme.GhostButton("退出后台程序");
-            exit2.ForeColor = Theme.Bad;
-            exit2.Click += (_, _) =>
-            {
-                AppendLog("正在退出后台进程…");
-                _onExit();
-            };
-            row2.Controls.Add(exit2);
-        }
-
-        var stackRows = new FlowLayoutPanel
-        {
-            FlowDirection = FlowDirection.TopDown,
-            WrapContents = false,
-            AutoSize = true,
-            AutoSizeMode = AutoSizeMode.GrowAndShrink,
-            BackColor = Theme.Surface,
-            Margin = new Padding(0),
-        };
-        stackRows.Controls.Add(row);
-        stackRows.Controls.Add(row2);
-        card.AddRow(stackRows, 0);
+        // 第一排：启动并注入 / 注入到运行中的 PotPlayer / 后台监听
+        // 第二排：打开日志目录 / 退出后台程序
+        // 用 FlowLayoutPanel 自带的换行标记，比「两个容器分行」可靠：
+        // 那个在 AutoSize 的 TableLayoutPanel 里会被压成一排。
+        row.WrapContents = true;
+        row.SetFlowBreak(watch, true);
+        card.AddRow(row, 0);
         return card;
     }
 
