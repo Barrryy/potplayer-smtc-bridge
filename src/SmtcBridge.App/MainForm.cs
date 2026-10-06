@@ -586,7 +586,10 @@ internal sealed class MainForm : Form
         row.Controls.Add(launch);
         row.Controls.Add(inject);
         row.Controls.Add(watch);
-        row.Controls.Add(openLog);
+
+        // 第二排：打开日志目录 / 退出后台程序
+        var row2 = Theme.Row(Theme.Surface);
+        row2.Controls.Add(openLog);
         if (_onExit is not null)
         {
             var exit = Theme.GhostButton("退出后台程序");
@@ -596,16 +599,36 @@ internal sealed class MainForm : Form
                 AppendLog("正在退出后台进程…");
                 _onExit();
             };
-            row.Controls.Add(exit);
+            row2.Controls.Add(exit);
         }
 
-        // 第一排：启动并注入 / 注入到运行中的 PotPlayer / 后台监听
-        // 第二排：打开日志目录 / 退出后台程序
-        // 用 FlowLayoutPanel 自带的换行标记，比「两个容器分行」可靠：
-        // 那个在 AutoSize 的 TableLayoutPanel 里会被压成一排。
-        row.WrapContents = true;
-        row.SetFlowBreak(watch, true);
-        card.AddRow(row, 0);
+        // 两排各占一行：用显式单元格的 TableLayoutPanel。
+        // 不能靠 FlowLayoutPanel 换行 —— AutoSize 且没有宽度约束时它会一直往右长，
+        // WrapContents / SetFlowBreak 都不会生效（这三次试错都是这个原因）。
+        foreach (var line in new[] { row, row2 })
+        {
+            line.AutoSize = false;
+            line.WrapContents = false;
+            line.Width = 660;
+            line.Height = 44;
+            line.Anchor = AnchorStyles.Left;
+        }
+
+        var grid = new TableLayoutPanel
+        {
+            ColumnCount = 1,
+            RowCount = 2,
+            AutoSize = true,
+            AutoSizeMode = AutoSizeMode.GrowAndShrink,
+            BackColor = Theme.Surface,
+            Margin = new Padding(0),
+        };
+        grid.ColumnStyles.Add(new ColumnStyle(SizeType.AutoSize));
+        grid.RowStyles.Add(new RowStyle(SizeType.Absolute, 44));
+        grid.RowStyles.Add(new RowStyle(SizeType.Absolute, 44));
+        grid.Controls.Add(row, 0, 0);
+        grid.Controls.Add(row2, 0, 1);
+        card.AddRow(grid, 0);
         return card;
     }
 
