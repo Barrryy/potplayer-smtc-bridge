@@ -678,7 +678,7 @@ internal sealed class MainForm : Form
                 // （实测按钮仍按旧宽度排列，于是互相压住）。
                 button.AutoSize = false;
                 button.Size = new Size(
-                    TextRenderer.MeasureText(button.Text, button.Font).Width + 36, 44);
+                    TextRenderer.MeasureText(Loc.T(button.Text), button.Font).Width + 36, 44);
                 button.Margin = new Padding(0, 0, 8, 0);
             }
         }
