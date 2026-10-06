@@ -6,6 +6,39 @@ Provide complete media metadata to the Windows **SMTC** (System Media Transport 
 
 ---
 
+## Quick start
+
+> **Requirements** — Windows 10/11 x64 · PotPlayer x64 · administrator rights for the install step.
+
+### 1 · Build
+
+Skip this step if you downloaded the release archive.
+
+```powershell
+$env:Path = "D:\mingw64\bin;" + $env:Path
+.\build.ps1
+```
+
+### 2 · Install
+
+Run the configuration GUI, select **Install injection**, then approve the elevation prompt.
+
+```
+build\PotPlayerSmtcBridge.exe
+```
+
+### 3 · Use
+
+Launch PotPlayer and play any file. The Windows media panel — and every other SMTC consumer — now shows the full title, artist, album, track number, genre and artwork.
+
+### Uninstall
+
+Select **Uninstall injection** in the GUI, or delete the registry key:
+
+```powershell
+Remove-Item 'HKLM:\SOFTWARE\Microsoft\Windows NT\CurrentVersion\Image File Execution Options\PotPlayerMini64.exe' -Recurse -Force
+```
+
 ## Overview
 
 PotPlayer publishes an SMTC session, but several media properties remain empty or unusable. The most significant gaps are:
@@ -76,7 +109,7 @@ Build output is written to `build/`:
 | `PotPlayerSmtcBridge.exe` | Configuration GUI |
 | `SmtcLoader.exe` | Standalone injector for manual testing |
 
-## Install and uninstall
+## Installation details
 
 1. Run `build\PotPlayerSmtcBridge.exe`.
 2. Complete the first-run wizard: locate the PotPlayer executable and review the metadata rules.

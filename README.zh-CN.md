@@ -6,6 +6,39 @@
 
 ---
 
+## 快速开始
+
+> **环境要求** —— Windows 10/11 x64 · PotPlayer x64 · 安装步骤需要管理员权限。
+
+### 1 · 构建
+
+使用 release 压缩包时跳过此步。
+
+```powershell
+$env:Path = "D:\mingw64\bin;" + $env:Path
+.\build.ps1
+```
+
+### 2 · 安装
+
+运行配置界面，点击「安装启动注入」，在提权提示中确认。
+
+```
+build\PotPlayerSmtcBridge.exe
+```
+
+### 3 · 使用
+
+正常启动 PotPlayer 并播放任意文件。Windows 媒体浮窗以及其他所有读取 SMTC 的程序即可看到完整的标题、歌手、专辑、曲目号、流派与封面。
+
+### 卸载
+
+在界面中点击「卸载启动注入」，或删除注册表键：
+
+```powershell
+Remove-Item 'HKLM:\SOFTWARE\Microsoft\Windows NT\CurrentVersion\Image File Execution Options\PotPlayerMini64.exe' -Recurse -Force
+```
+
 ## 项目目的
 
 PotPlayer 发布的 SMTC 会话中有多项媒体属性为空或不可用，主要缺口如下：
@@ -76,7 +109,7 @@ $env:Path = "D:\mingw64\bin;" + $env:Path
 | `PotPlayerSmtcBridge.exe` | 配置界面 |
 | `SmtcLoader.exe` | 用于手动测试的独立注入器 |
 
-## 安装与卸载
+## 安装细节
 
 1. 运行 `build\PotPlayerSmtcBridge.exe`；
 2. 在首次运行向导中指定 PotPlayer 主程序并确认元数据规则；
