@@ -499,11 +499,11 @@ internal sealed class MainForm : Form
             // 红色后果提示：这几个文件被手动删掉/挪走后，系统会按 IFEO 规则
             // 去拉起一个不存在的注入器，PotPlayer 会完全打不开。
             _patchWarning.Text =
-                "⚠ Do not delete or move the files inside the install folder on your own — "
+                "⚠ Do NOT delete or move the files inside the install folder on your own — "
                 + "Windows launches the injector from there on every PotPlayer start; "
-                + "if it is missing, PotPlayer will not start at all.\n"
-                + "⚠ 不要自行删除或移动安装目录里的文件：每次启动 PotPlayer 时系统会去那里拉起注入器，"
-                + "文件缺失会导致 PotPlayer 完全无法启动。";
+                + "if it is missing, PotPlayer will NOT start at all!\n"
+                + "⚠ 不要自行删除或移动安装目录里的文件：每次启动 PotPlayer 时系统会拉起注入器，"
+                + "文件缺失会导致 PotPlayer 完全无法启动！";
 
             if (IfeoInstaller.MissingFiles() is { Length: > 0 } missing)
             {
