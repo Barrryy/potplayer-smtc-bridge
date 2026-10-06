@@ -158,7 +158,10 @@ internal sealed class MainForm : Form
 
         card.AddRow(grid, 0);
 
-        var row = Theme.Row(Theme.Surface);
+        // 用普通 Panel + 手工定位，不用 FlowLayoutPanel：
+        // 流式面板在控件「加入」那一刻就定好位置，之后双语翻译让按钮变宽它不会重排，
+        // 相邻按钮就会互相压住（这就是重叠的根因）。手工算 X 则不会。
+        var row = new Panel { Height = 44, BackColor = Theme.Surface, Margin = new Padding(0) };
         var refresh = Theme.GhostButton("刷新状态");
         refresh.Click += (_, _) => RefreshStatus();
         var change = Theme.GhostButton("重新检测 PotPlayer");
@@ -645,7 +648,7 @@ internal sealed class MainForm : Form
         row.Controls.Add(watch);
 
         // 第二排：打开日志目录 / 退出后台程序
-        var row2 = Theme.Row(Theme.Surface);
+        var row2 = new Panel { Height = 44, BackColor = Theme.Surface, Margin = new Padding(0) };
         row2.Controls.Add(openLog);
         if (_onExit is not null)
         {
@@ -672,6 +675,7 @@ internal sealed class MainForm : Form
             line.WrapContents = false;
             line.MinimumSize = new Size(0, 44);
             line.Anchor = AnchorStyles.Left;
+            var nextX = 0;
             foreach (Control button in line.Controls.Cast<Control>().ToArray())
             {
                 // 显式按文字量宽度：AutoSize 在 FlowLayoutPanel 里不一定被采纳
@@ -680,6 +684,8 @@ internal sealed class MainForm : Form
                 button.Size = new Size(
                     TextRenderer.MeasureText(Loc.T(button.Text), button.Font).Width + 36, 44);
                 button.Margin = new Padding(0, 0, 8, 0);
+                button.Location = new Point(nextX, 0);
+                nextX += button.Width + 8;
 
                 // 关键：FlowLayoutPanel 只在这个子控件「被加入」的那一刻排位置。
                 // 先量好尺寸、从容器里摘掉再放回去，才能让位置按最终宽度算。
