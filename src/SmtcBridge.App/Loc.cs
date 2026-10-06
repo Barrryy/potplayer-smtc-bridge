@@ -215,10 +215,41 @@ internal static class Loc
         switch (root)
         {
             case Label or Button or CheckBox or RadioButton or GroupBox:
-                root.Text = T(root.Text);
+                var translated = T(root.Text);
+                if (ReferenceEquals(translated, root.Text) || translated == root.Text)
+                {
+                    ReportMissing(root.Text);
+                }
+                root.Text = translated;
                 break;
         }
 
         foreach (Control child in root.Controls) ApplyDeep(child);
+    }
+
+    private static readonly HashSet<string> Reported = new(StringComparer.Ordinal);
+
+    /// <summary>
+    /// 把「含中文但词典里没有」的字符串记到 %TEMP%\potplayer-smtc-bridge\loc-missing.log，
+    /// 中文改了忘了同步词典时能自己冒出来，不用靠肉眼发现。
+    /// </summary>
+    private static void ReportMissing(string? text)
+    {
+        if (string.IsNullOrEmpty(text)) return;
+        if (!text.Any(c => c >= 0x4E00 && c <= 0x9FFF)) return;   // 不含汉字就不管
+        // 已经是双语/多行拼出来的（"  ·  " 分隔或含换行）就别刷屏了
+        if (text.Contains("  ·  ") || text.Contains('\n')) return;
+        if (!Reported.Add(text)) return;                         // 同一条只记一次
+
+        try
+        {
+            Directory.CreateDirectory(AppPaths.LogDir);
+            File.AppendAllText(Path.Combine(AppPaths.LogDir, "loc-missing.log"),
+                               text.Replace("\r", " ").Replace("\n", " / ") + Environment.NewLine);
+        }
+        catch
+        {
+            // 日志写不了不影响界面
+        }
     }
 }
