@@ -122,7 +122,14 @@ void* Qi(void* object, const GUID& iid) {
 }
 
 void PutString(void* iface, int slot, const wchar_t* text) {
-    if (!iface || !text || !*text || !g_createString) return;
+    if (!iface) return;
+    // 空值必须清掉，否则切到「没有这个标签」的歌时，上一首的值会留在 SMTC 里。
+    // 实测：传空串宿主会忽略（专辑照样是上一首的）；传 NULL 才能真正清除。
+    if (!text || !*text) {
+        reinterpret_cast<PFN_PutString>(VtableOf(iface)[slot])(iface, nullptr);
+        return;
+    }
+    if (!g_createString) return;
     void* hstring = nullptr;
     const size_t len = wcslen(text);
     if (FAILED(g_createString(text, static_cast<UINT32>(len), &hstring)) || !hstring) return;
@@ -429,7 +436,7 @@ DWORD WINAPI TagReaderThread(LPVOID) {
 // ---------------------------------------------------------------------------
 
 void WriteGenres(void* musicV2, const std::wstring& genre) {
-    if (!musicV2 || genre.empty() || !g_createString) return;
+    if (!musicV2 || !g_createString) return;
 
     void* vector = nullptr;
     if (FAILED(reinterpret_cast<PFN_GetObject>(VtableOf(musicV2)[kSlotGetGenres])(musicV2,
@@ -439,8 +446,10 @@ void WriteGenres(void* musicV2, const std::wstring& genre) {
         return;
     }
 
-    // 先清空，避免多次 Update 累积重复项
+    // 先清空：既避免多次 Update 累积重复项，也保证「新歌没有流派」时
+    // 不会把上一首的流派留在 SMTC 里（实测过这个残留）。
     reinterpret_cast<PFN_VectorClear>(VtableOf(vector)[kSlotVectorClear])(vector);
+    if (genre.empty()) return;
 
     // 支持 "A;B" / "A;B" 这类多流派写法
     size_t start = 0;
@@ -486,16 +495,13 @@ void ApplyMetadata() {
     if (meta.title.empty()) return;
 
     PutString(g_musicV1, kSlotPutTitle, meta.title.c_str());
-    if (!meta.artist.empty()) {
-        PutString(g_musicV1, kSlotPutArtist, meta.artist.c_str());
-    }
+    PutString(g_musicV1, kSlotPutArtist, meta.artist.c_str());
     PutString(g_musicV1, kSlotPutAlbumArtist,
               meta.albumArtist.empty() ? meta.artist.c_str() : meta.albumArtist.c_str());
     PutString(g_musicV2, kSlotPutAlbumTitle, meta.album.c_str());
-    if (meta.trackNumber > 0) {
-        reinterpret_cast<PFN_PutInt>(VtableOf(g_musicV2)[kSlotPutTrackNumber])(g_musicV2,
-                                                                               meta.trackNumber);
-    }
+    // 没有曲目号时写 0，同样是为了清掉上一首的残留
+    reinterpret_cast<PFN_PutInt>(VtableOf(g_musicV2)[kSlotPutTrackNumber])(g_musicV2,
+                                                                           meta.trackNumber);
     WriteGenres(g_musicV2, meta.genre);
 }
 
