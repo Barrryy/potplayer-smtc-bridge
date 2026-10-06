@@ -452,7 +452,7 @@ internal sealed class MainForm : Form
         {
             ColumnCount = 1,
             RowCount = 2,
-            Width = 660,
+            Width = 1010,
             Height = 96,
             AutoSize = false,
             BackColor = Theme.Surface,
@@ -460,7 +460,8 @@ internal sealed class MainForm : Form
             Padding = new Padding(0),
         };
 
-        grid.ColumnStyles.Add(new ColumnStyle(SizeType.Absolute, 660));
+        // 列宽必须容得下第一排三颗双语按钮（约 810px），写 660 会把第三颗裁掉
+        grid.ColumnStyles.Add(new ColumnStyle(SizeType.Absolute, 1010));
         grid.RowStyles.Add(new RowStyle(SizeType.Absolute, 44));
         grid.RowStyles.Add(new RowStyle(SizeType.Absolute, 44));
 
