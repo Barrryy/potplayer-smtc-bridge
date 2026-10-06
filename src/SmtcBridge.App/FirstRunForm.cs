@@ -39,7 +39,6 @@ internal sealed class FirstRunForm : Form
         _stack.Controls.Add(BuildHeader());
         _stack.Controls.Add(BuildIntroCard());
         _stack.Controls.Add(BuildPathCard());
-        _stack.Controls.Add(BuildOptionCard());
         _stack.Controls.Add(BuildButtons());
 
         Controls.Add(_stack);
@@ -143,17 +142,6 @@ internal sealed class FirstRunForm : Form
         return card;
     }
 
-    private Card BuildOptionCard()
-    {
-        var card = new Card("② 注入方式");
-        card.AddRow(Theme.Label(
-            "点「安装启动注入」后，每次启动 PotPlayer 都会自动注入："
-            + "不改动它的任何文件，不需要常驻进程，也不需要开机自启。\n"
-            + "想撤销时点「卸载启动注入」，PotPlayer 恢复原样。",
-            Theme.TextDim, Theme.FontSmall, 660), 8);
-        return card;
-    }
-
     private Control BuildButtons()
     {
         var row = Theme.Row(Theme.Window);
@@ -175,7 +163,6 @@ internal sealed class FirstRunForm : Form
     private static Control Field(string label, DarkInput input)
     {
         // 与主界面一致：手工定位，避免嵌套 TableLayoutPanel 把输入框拉高
-        const int captionWidth = 104;
         var row = new Panel
         {
             Height = input.Height,
@@ -185,7 +172,9 @@ internal sealed class FirstRunForm : Form
             Anchor = AnchorStyles.Left | AnchorStyles.Right,
         };
 
-        var caption = Theme.Label(label, Theme.TextDim);
+        var caption = Theme.Label(Loc.T(label), Theme.TextDim);
+        var captionWidth = Math.Max(120,
+            TextRenderer.MeasureText(caption.Text, caption.Font).Width + 14);
         caption.BackColor = Theme.Surface;
         caption.Location = new Point(0, Math.Max(0, (input.Height - caption.Height) / 2));
         row.Controls.Add(caption);
