@@ -370,12 +370,12 @@ internal sealed class MainForm : Form
             + "代价是常驻一个隐藏进程、并且需要开机自启。",
             Theme.TextDim, Theme.FontSmall, 660), 6);
 
-        var actRow = Theme.Row(Theme.Surface);
-
         var launch = Theme.GhostButton("启动并注入");
         launch.Click += (_, _) => LaunchAndInject();
+
         var inject = Theme.GhostButton("注入到运行中的 PotPlayer");
         inject.Click += (_, _) => InjectRunning();
+
         var watch = Theme.GhostButton("后台监听");
         watch.Click += (_, _) =>
         {
@@ -384,30 +384,87 @@ internal sealed class MainForm : Form
                 ? "启动监听失败。"
                 : $"监听已启动（PID {process.Id}）：PotPlayer 启动时自动注入。");
         };
+
         var openLog = Theme.GhostButton("打开日志目录");
         openLog.Click += (_, _) =>
         {
             Directory.CreateDirectory(AppPaths.LogDir);
-            Process.Start(new ProcessStartInfo { FileName = AppPaths.LogDir, UseShellExecute = true });
+            Process.Start(new ProcessStartInfo
+            {
+                FileName = AppPaths.LogDir,
+                UseShellExecute = true
+            });
         };
 
-        actRow.Controls.Add(launch);
-        actRow.Controls.Add(inject);
-        actRow.Controls.Add(watch);
-        actRow.Controls.Add(openLog);
+        // ==================== 第一排 ====================
+
+        var row1 = new Panel
+        {
+            Width = 660,
+            Height = 44,
+            BackColor = Theme.Surface,
+            Margin = new Padding(0),
+        };
+
+        launch.Location = new Point(0, 0);
+        inject.Location = new Point(launch.Right + 8, 0);
+        watch.Location = new Point(inject.Right + 8, 0);
+
+        row1.Controls.Add(launch);
+        row1.Controls.Add(inject);
+        row1.Controls.Add(watch);
+
+        // ==================== 第二排 ====================
+
+        var row2 = new Panel
+        {
+            Width = 660,
+            Height = 44,
+            BackColor = Theme.Surface,
+            Margin = new Padding(0),
+        };
+
+        openLog.Location = new Point(0, 0);
+
+        row2.Controls.Add(openLog);
 
         if (_onExit is not null)
         {
             var exit = Theme.GhostButton("退出后台程序");
             exit.ForeColor = Theme.Bad;
+            exit.Location = new Point(openLog.Right + 8, 0);
+
             exit.Click += (_, _) =>
             {
                 AppendLog("正在退出后台进程…");
                 _onExit();
             };
-            actRow.Controls.Add(exit);
+
+            row2.Controls.Add(exit);
         }
-        card.AddRow(actRow, 8);
+
+        // ==================== 两排容器 ====================
+
+        var grid = new TableLayoutPanel
+        {
+            ColumnCount = 1,
+            RowCount = 2,
+            Width = 660,
+            Height = 96,
+            AutoSize = false,
+            BackColor = Theme.Surface,
+            Margin = new Padding(0),
+            Padding = new Padding(0),
+        };
+
+        grid.ColumnStyles.Add(new ColumnStyle(SizeType.Absolute, 660));
+        grid.RowStyles.Add(new RowStyle(SizeType.Absolute, 44));
+        grid.RowStyles.Add(new RowStyle(SizeType.Absolute, 44));
+
+        grid.Controls.Add(row1, 0, 0);
+        grid.Controls.Add(row2, 0, 1);
+
+        card.AddRow(grid, 8);
 
         return card;
     }
@@ -607,11 +664,19 @@ internal sealed class MainForm : Form
         // WrapContents / SetFlowBreak 都不会生效（这三次试错都是这个原因）。
         foreach (var line in new[] { row, row2 })
         {
-            line.AutoSize = false;
+            // 每排自己按内容排：容器不设死宽度，里面的按钮按文字自适应、留固定间距，
+            // 这样双语长文案（"Inject into running PotPlayer · 注入到运行中的 PotPlayer"）
+            // 不会压到旁边的按钮上。
+            line.AutoSize = true;
+            line.AutoSizeMode = AutoSizeMode.GrowAndShrink;
             line.WrapContents = false;
-            line.Width = 660;
-            line.Height = 44;
+            line.MinimumSize = new Size(0, 44);
             line.Anchor = AnchorStyles.Left;
+            foreach (Control button in line.Controls)
+            {
+                button.AutoSize = true;
+                button.Margin = new Padding(0, 0, 8, 0);
+            }
         }
 
         var grid = new TableLayoutPanel
