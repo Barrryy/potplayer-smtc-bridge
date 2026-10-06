@@ -158,10 +158,7 @@ internal sealed class MainForm : Form
 
         card.AddRow(grid, 0);
 
-        // 用普通 Panel + 手工定位，不用 FlowLayoutPanel：
-        // 流式面板在控件「加入」那一刻就定好位置，之后双语翻译让按钮变宽它不会重排，
-        // 相邻按钮就会互相压住（这就是重叠的根因）。手工算 X 则不会。
-        var row = new Panel { Height = 44, BackColor = Theme.Surface, Margin = new Padding(0) };
+        var row = Theme.Row(Theme.Surface);
         var refresh = Theme.GhostButton("刷新状态");
         refresh.Click += (_, _) => RefreshStatus();
         var change = Theme.GhostButton("重新检测 PotPlayer");
@@ -615,7 +612,9 @@ internal sealed class MainForm : Form
     private Card BuildActionsCard()
     {
         var card = new Card("操作");
-        var row = Theme.Row(Theme.Surface);
+        // 这一排用普通 Panel + 手工定位：FlowLayoutPanel 在控件加入那一刻就定好位置，
+        // 双语翻译让按钮变宽后它不会重排，相邻按钮就会互相压住（重叠的根因）。
+        var row = new Panel { Height = 44, BackColor = Theme.Surface, Margin = new Padding(0) };
 
         var launch = Theme.PrimaryButton("启动并注入");
         launch.Click += (_, _) => LaunchAndInject();
