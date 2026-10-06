@@ -674,7 +674,11 @@ internal sealed class MainForm : Form
             line.Anchor = AnchorStyles.Left;
             foreach (Control button in line.Controls)
             {
-                button.AutoSize = true;
+                // 显式按文字量宽度：AutoSize 在 FlowLayoutPanel 里不一定被采纳
+                // （实测按钮仍按旧宽度排列，于是互相压住）。
+                button.AutoSize = false;
+                button.Size = new Size(
+                    TextRenderer.MeasureText(button.Text, button.Font).Width + 36, 44);
                 button.Margin = new Padding(0, 0, 8, 0);
             }
         }
