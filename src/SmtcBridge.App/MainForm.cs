@@ -672,7 +672,7 @@ internal sealed class MainForm : Form
             line.WrapContents = false;
             line.MinimumSize = new Size(0, 44);
             line.Anchor = AnchorStyles.Left;
-            foreach (Control button in line.Controls)
+            foreach (Control button in line.Controls.Cast<Control>().ToArray())
             {
                 // 显式按文字量宽度：AutoSize 在 FlowLayoutPanel 里不一定被采纳
                 // （实测按钮仍按旧宽度排列，于是互相压住）。
@@ -680,6 +680,11 @@ internal sealed class MainForm : Form
                 button.Size = new Size(
                     TextRenderer.MeasureText(Loc.T(button.Text), button.Font).Width + 36, 44);
                 button.Margin = new Padding(0, 0, 8, 0);
+
+                // 关键：FlowLayoutPanel 只在这个子控件「被加入」的那一刻排位置。
+                // 先量好尺寸、从容器里摘掉再放回去，才能让位置按最终宽度算。
+                line.Controls.Remove(button);
+                line.Controls.Add(button);
             }
             // 按钮尺寸变了，FlowLayoutPanel 不会自己重排（它按加入时的旧宽度摆位置，
             // 于是双语长文案互相压住）——这里显式重排一次。
