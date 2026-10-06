@@ -670,9 +670,7 @@ internal sealed class MainForm : Form
             // 每排自己按内容排：容器不设死宽度，里面的按钮按文字自适应、留固定间距，
             // 这样双语长文案（"Inject into running PotPlayer · 注入到运行中的 PotPlayer"）
             // 不会压到旁边的按钮上。
-            line.AutoSize = true;
-            line.AutoSizeMode = AutoSizeMode.GrowAndShrink;
-            line.WrapContents = false;
+            line.AutoSize = false;
             line.MinimumSize = new Size(0, 44);
             line.Anchor = AnchorStyles.Left;
             var nextX = 0;
@@ -694,6 +692,7 @@ internal sealed class MainForm : Form
             }
             // 按钮尺寸变了，FlowLayoutPanel 不会自己重排（它按加入时的旧宽度摆位置，
             // 于是双语长文案互相压住）——这里显式重排一次。
+            line.Width = nextX;
             line.PerformLayout();
         }
 
