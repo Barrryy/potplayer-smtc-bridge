@@ -1,0 +1,13 @@
+# 统一换行符，避免跨平台协作时整文件 diff
+* text=auto
+
+# PowerShell 脚本需要 UTF-8 BOM（否则 Windows PowerShell 5.1 会按 ANSI 解析中文）
+*.ps1 text eol=crlf
+
+*.md   text eol=lf
+*.py   text eol=lf
+*.cpp  text eol=lf
+*.h    text eol=lf
+
+*.png  binary
+*.ico  binary
