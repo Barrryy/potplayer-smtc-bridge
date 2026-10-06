@@ -322,6 +322,17 @@ internal sealed class MainForm : Form
         restore.Click += (_, _) => DoIfeo(install: false);
         installRow.Controls.Add(install);
         installRow.Controls.Add(restore);
+        var openDir = Theme.GhostButton("打开安装目录");
+        openDir.Click += (_, _) =>
+        {
+            Directory.CreateDirectory(AppPaths.InstallDir);
+            Process.Start(new ProcessStartInfo
+            {
+                FileName = AppPaths.InstallDir,
+                UseShellExecute = true,
+            });
+        };
+        installRow.Controls.Add(openDir);
         card.AddRow(installRow, 8);
 
         card.AddRow(Theme.Label("———————— 或者 ————————", Theme.TextDim, Theme.FontSmall), 16);
@@ -388,13 +399,19 @@ internal sealed class MainForm : Form
         // 新安装方式：IFEO 启动注入（不改动 PotPlayer 任何文件）
         if (IfeoInstaller.IsInstalledByUs(path))
         {
-            _patchState.Text = "状态：IFEO 启动注入已安装 —— 每次启动 PotPlayer 自动注入，无任何常驻进程";
+            _patchState.Text = $"状态：启动注入已安装 —— 文件在 {AppPaths.InstallDir}，本程序目录随便挪";
             _patchState.ForeColor = Theme.Good;
             if (PePatcher.IsPatched(path))
             {
                 _patchState.Text += "（注意：主程序还留着旧补丁，请点「卸载」后手动还原）";
                 _patchState.ForeColor = Theme.Warn;
             }
+            return;
+        }
+        if (IfeoInstaller.StaleDebugger(path) is { Length: > 0 } stale)
+        {
+            _patchState.Text = $"状态：注册表还指向 {stale} —— 点「卸载」再「安装」就能修正";
+            _patchState.ForeColor = Theme.Warn;
             return;
         }
         if (IfeoInstaller.ForeignDebugger(path) is { Length: > 0 } other)
