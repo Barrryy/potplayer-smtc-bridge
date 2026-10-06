@@ -211,7 +211,8 @@ bool AttachFactoryHook(void* factory) {
 
     std::wstring owner;
     if (!BelongsToMediaControl(slot, &owner)) {
-        LogTagW("[capture] vtable[6] 不在 MediaControl.dll，放弃挂接以免误挂:", owner.c_str());
+        LogTagW("[capture] vtable[6] is not in MediaControl.dll, skipping to avoid a wrong hook:",
+                owner.c_str());
         return false;
     }
 

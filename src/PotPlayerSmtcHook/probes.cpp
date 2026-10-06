@@ -215,7 +215,7 @@ void LogProcessInfo() {
             return false;
         }();
         LogF("  %-30s base=%p size=0x%08lX%s", WideToUtf8(mod.name.c_str()).c_str(), mod.base,
-             static_cast<unsigned long>(mod.size), target ? "  <== 挂接目标" : "");
+             static_cast<unsigned long>(mod.size), target ? "  <== hook target" : "");
     }
 
     LogF("top-level windows of this process:");
