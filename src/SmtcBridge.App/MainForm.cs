@@ -27,8 +27,9 @@ internal sealed class MainForm : Form
 
         Text = "PotPlayer SMTC Bridge";
         StartPosition = FormStartPosition.CenterScreen;
-        ClientSize = new Size(800, 850);
-        MinimumSize = new Size(700, 560);
+        // 内容列固定 660，再加卡片与滚动条留白；高度留足（下方还有日志框）
+        ClientSize = new Size(800, 880);
+        MinimumSize = new Size(760, 640);
         BackColor = Theme.Window;
         ForeColor = Theme.Text;
         Font = Theme.FontBase;
@@ -52,7 +53,7 @@ internal sealed class MainForm : Form
         _loading = true;
         _tagFirst.Checked = _config.TagFirst;
         _pattern.Text = _config.NamePattern;
-        _sample.Text = "周杰伦 - 夜曲.mp3";
+        _sample.Text = "洛天依 - 上山岗.mp3";
         _loading = false;
 
         UpdatePreview();
@@ -69,7 +70,7 @@ internal sealed class MainForm : Form
     {
         base.OnShown(e);
         ResizeCards();
-        AppendLog("就绪。点「启动并注入」会自动拉起 PotPlayer 并完成注入。");
+        AppendLog("就绪。点击「启动并注入」会自动拉起 PotPlayer 并完成注入。");
     }
 
     /// <summary>
@@ -187,7 +188,7 @@ internal sealed class MainForm : Form
         var found = Injector.DetectPotPlayer();
         if (found is null)
         {
-            AppendLog("没找到 PotPlayer，请手动指定（首次向导里也能改）。");
+            AppendLog("未找到 PotPlayer，请手动指定。");
             return;
         }
         _config.PotPlayerPath = found;
@@ -211,7 +212,7 @@ internal sealed class MainForm : Form
         card.AddRow(Theme.Label(
             "文件名伪正则：%title% %artist% %album% %albumArtist% %track% 是占位符，"
             + "其余字符按字面量匹配，%% 表示一个字面量百分号。\n"
-            + "匹配时按顺序查找字面量，它之前的文本归给上一个占位符，末尾占位符吃掉剩余全部。",
+            + "匹配时按顺序查找字面量，它之前的文本归给上一个占位符，末尾占位符匹配剩余全部。",
             Theme.TextDim, Theme.FontSmall, 660), 8);
 
         card.AddRow(Field("规则", _pattern), 12);
@@ -220,7 +221,7 @@ internal sealed class MainForm : Form
             if (!_loading) UpdatePreview();
         };
 
-        card.AddRow(Field("试一个文件名", _sample), 10);
+        card.AddRow(Field("文件名匹配范例", _sample), 10);
         _sample.Box.TextChanged += (_, _) =>
         {
             if (!_loading) UpdatePreview();
@@ -251,28 +252,35 @@ internal sealed class MainForm : Form
     {
         // 手工定位：嵌套 TableLayoutPanel 的 AutoSize 在多层嵌套时不可靠，
         // 会出现输入框被拉高的问题，这里用固定高度 + Resize 里同步宽度。
-        const int captionWidth = 104;
+        // 标题现在是双语的（Filename sample · 文件名匹配范例），宽度按实际文本量出来；
+        // 硬编码会让加长后的标题压到输入框上（和首次向导里同一个毛病）。
+        var caption = Theme.Label(Loc.T(label), Theme.TextDim);
+        caption.BackColor = Theme.Surface;
+        var captionWidth = Math.Max(120,
+            TextRenderer.MeasureText(caption.Text, caption.Font).Width + 14);
+
         var row = new Panel
         {
             Height = input.Height,
             BackColor = Theme.Surface,
             Margin = new Padding(0),
             MinimumSize = new Size(320, input.Height),
-            // TableLayoutPanel 里默认按 Top|Left 锚定，不横向拉伸，
-            // 必须显式声明左右锚定，输入框才能跟着卡片宽度走。
-            Anchor = AnchorStyles.Left | AnchorStyles.Right,
+            // 与本窗口其余内容同宽（660），只往左锚定：
+            // 左右锚定会让这一行超出内容列，输入框就甩到卡片外面去了。
+            Width = 660,
+            MaximumSize = new Size(660, input.Height),
+            Anchor = AnchorStyles.Left,
         };
 
-        var caption = Theme.Label(label, Theme.TextDim);
-        caption.BackColor = Theme.Surface;
         caption.Location = new Point(0, Math.Max(0, (input.Height - caption.Height) / 2));
         row.Controls.Add(caption);
 
         input.Location = new Point(captionWidth, 0);
+        input.Width = Math.Max(40, Math.Min(row.Width, 660) - captionWidth);
         row.Controls.Add(input);
         row.Resize += (_, _) =>
         {
-            var width = row.Width - captionWidth;
+            var width = Math.Min(row.Width, 660) - captionWidth;
             if (width > 40) input.Width = width;
         };
         return row;
@@ -308,8 +316,8 @@ internal sealed class MainForm : Form
         card.AddRow(Theme.Label(
             "在 Windows 里登记一条启动规则（IFEO），每次启动 PotPlayer 时\n"
             + "先拉起本工具的注入器，把注入模块塞进进程后立刻退出。\n"
-            + "不碰 PotPlayer 任何文件（它的主程序带 Themida 壳 + 签名自校验，改一个字节就起不来）。\n"
-            + "装一次之后：无后台进程、无开机启动项、重启照样生效、PotPlayer 自己更新也不用重装。",
+            + "不碰 PotPlayer 任何文件。\n"
+            + "装一次之后：无后台进程、无开机启动项；重启、PotPlayer更新仍有效。",
             Theme.TextDim, Theme.FontSmall, 660), 6);
 
         _patchState.BackColor = Theme.Surface;
@@ -340,7 +348,7 @@ internal sealed class MainForm : Form
         // ---------------- 方式二：后台自动注入
         card.AddRow(Theme.Label("方式二 · 后台自动注入（不改动任何文件）", Theme.Text, Theme.FontBold), 12);
         card.AddRow(Theme.Label(
-            "程序在后台静默待命：没有窗口、没有托盘图标。每次 PotPlayer 启动时自动注入。\n"
+            "程序在后台静默待命：没有窗口、托盘图标。每次 PotPlayer 启动时自动注入。\n"
             + "代价是常驻一个隐藏进程、并且需要开机自启。",
             Theme.TextDim, Theme.FontSmall, 660), 6);
 
@@ -356,7 +364,7 @@ internal sealed class MainForm : Form
             var process = Injector.StartWatch();
             AppendLog(process is null
                 ? "启动监听失败。"
-                : $"监听已启动（PID {process.Id}）：PotPlayer 一出现就会自动注入。");
+                : $"监听已启动（PID {process.Id}）：PotPlayer 启动时自动注入。");
         };
         var openLog = Theme.GhostButton("打开日志目录");
         openLog.Click += (_, _) =>
@@ -402,12 +410,12 @@ internal sealed class MainForm : Form
             _patchState.Text =
                 $"State: injection installed — files live in {AppPaths.InstallDir}; "
                 + "this program folder can be moved or deleted freely.\n"
-                + $"状态：启动注入已安装 —— 文件位于 {AppPaths.InstallDir}，本程序目录可随意移动或删除。";
+                + $"状态：启动注入已安装 —— 文件位于 {AppPaths.InstallDir}，本程序目录可移动或删除。\n" + "若需卸载本服务，请保留程序并按程序说明卸载。";
 
             if (IfeoInstaller.MissingFiles() is { Length: > 0 } missing)
             {
                 _patchState.Text += "\nIncomplete install — missing in the install folder: " + missing
-                                  + "\n安装不完整 —— 安装目录里缺文件：" + missing;
+                                  + "\n安装不完整 —— 安装目录里缺失文件：" + missing;
                 _patchState.ForeColor = Theme.Warn;
                 return;
             }
@@ -425,7 +433,7 @@ internal sealed class MainForm : Form
         {
             _patchState.Text =
                 $"State: the registry still points at {stale} — click Uninstall, then Install, to fix it.\n"
-                + $"状态：注册表仍指向 {stale} —— 点「卸载」再「安装」即可修正。";
+                + $"状态：注册表仍指向 {stale} —— 点击「卸载」、「安装」即可修正。";
             _patchState.ForeColor = Theme.Warn;
             return;
         }
@@ -440,13 +448,13 @@ internal sealed class MainForm : Form
 
         if (PePatcher.IsPatched(path))
         {
-            _patchState.Text = "状态：已安装（PotPlayer 每次启动都会自动加载本工具）"
+            _patchState.Text = "状态：已安装（PotPlayer 每次启动将自动加载）"
                              + (PePatcher.HasBackup(path) ? "，备份存在" : "");
             _patchState.ForeColor = Theme.Good;
         }
         else if (PePatcher.HasBackup(path))
         {
-            _patchState.Text = "状态：未安装（检测到备份文件，可随时还原）";
+            _patchState.Text = "状态：未安装（检测到备份文件，可还原）";
             _patchState.ForeColor = Theme.TextDim;
         }
         else
@@ -462,7 +470,7 @@ internal sealed class MainForm : Form
         var path = _config.PotPlayerPath;
         if (string.IsNullOrEmpty(path) || !File.Exists(path))
         {
-            AppendLog("还没定位到 PotPlayer。");
+            AppendLog("未定位到 PotPlayer。");
             return;
         }
 
@@ -479,9 +487,9 @@ internal sealed class MainForm : Form
             process?.WaitForExit();
             AppendLog(process?.ExitCode == 0
                 ? (install
-                    ? "IFEO 启动注入已安装：以后每次启动 PotPlayer 都会自动注入，不需要任何常驻进程。"
-                    : "IFEO 启动注入已卸载：PotPlayer 恢复成原样。")
-                : "操作未完成（详情见弹出的提示框）。");
+                    ? "IFEO 启动注入已安装：启动 PotPlayer 时会自动注入，无任何常驻进程。"
+                    : "IFEO 启动注入已卸载：PotPlayer 已复原。")
+                : "操作未完成。");
         }
         catch (Exception ex)
         {
@@ -495,12 +503,12 @@ internal sealed class MainForm : Form
         var path = _config.PotPlayerPath;
         if (string.IsNullOrEmpty(path) || !File.Exists(path))
         {
-            AppendLog("还没定位到 PotPlayer。");
+            AppendLog("未定位到 PotPlayer。");
             return;
         }
         if (Injector.IsPotPlayerRunning())
         {
-            AppendLog("请先完全退出 PotPlayer 再改它的主程序。");
+            AppendLog("请完全退出 PotPlayer 后，再进行修改。");
             return;
         }
 
@@ -517,7 +525,7 @@ internal sealed class MainForm : Form
             process?.WaitForExit();
             AppendLog(process?.ExitCode == 0
                 ? (install ? "补丁已写入 PotPlayer。" : "已还原为原始文件。")
-                : "操作未完成（详情见弹出的提示框）。");
+                : "操作未完成。");
         }
         catch (Exception ex)
         {
@@ -543,7 +551,7 @@ internal sealed class MainForm : Form
             var process = Injector.StartWatch();
             AppendLog(process is null
                 ? "启动监听失败。"
-                : $"监听已启动（PID {process.Id}）：PotPlayer 一出现就会自动注入。");
+                : $"监听已启动（PID {process.Id}）：PotPlayer 启动时将自动注入。");
         };
 
         var openLog = Theme.GhostButton("打开日志目录");
@@ -583,12 +591,12 @@ internal sealed class MainForm : Form
         var path = _config.PotPlayerPath;
         if (string.IsNullOrEmpty(path) || !File.Exists(path))
         {
-            AppendLog("还没定位到 PotPlayer，请先点「重新检测 PotPlayer」。");
+            AppendLog("未定位到 PotPlayer，请「重新检测 PotPlayer」。");
             return;
         }
         if (Injector.IsPotPlayerRunning())
         {
-            AppendLog("PotPlayer 已在运行。同一个 DLL 重复注入不会执行新代码，请先退出它。");
+            AppendLog("PotPlayer 已在运行。同一个 DLL 重复注入不会执行新代码，请先退出。");
             return;
         }
         var (ok, output) = Injector.RunLoader("--launch", path);
@@ -603,7 +611,7 @@ internal sealed class MainForm : Form
         var (ok, output) = Injector.RunLoader();
         AppendLog(ok ? "注入成功。" : "注入失败：");
         AppendLog(output);
-        if (ok) AppendLog("提示：若 PotPlayer 之前就在运行，请重启它，否则新代码不会生效。");
+        if (ok) AppendLog("提示：若 PotPlayer 之前就在运行，请重启，否则注入不会生效。");
     }
 
     // ---------------------------------------------------------------- 日志

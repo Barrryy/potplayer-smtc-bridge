@@ -74,18 +74,18 @@ internal static class Loc
         ["（当前为仅文件名模式）"] = "(currently filename-only mode)  ·  （当前为仅文件名模式）",
         ["标签优先，文件名兜底"] = "Tags first, filename as fallback  ·  标签优先，文件名兜底",
         ["恢复默认规则"] = "Restore defaults  ·  恢复默认规则",
-        ["试一个文件名"] = "Test a filename  ·  试一个文件名",
+        ["文件名匹配范例"] = "Filename sample  ·  文件名匹配范例",
         ["未指定"] = "not set  ·  未指定",
         ["检查中…"] = "checking…  ·  检查中…",
         ["运行记录"] = "Log  ·  运行记录",
 
         // 状态栏
         ["尚未定位 PotPlayer。"] = "PotPlayer is not located yet.  ·  尚未定位 PotPlayer。",
-        ["状态：已安装（PotPlayer 每次启动都会自动加载本工具）"] =
+        ["状态：已安装（PotPlayer 每次启动将自动加载）"] =
             "State: installed (PotPlayer loads this tool on every start)  ·  状态：已安装",
         ["状态：未安装（当前依赖后台进程自动注入）"] =
             "State: not installed (relying on the background process)  ·  状态：未安装",
-        ["状态：未安装（检测到备份文件，可随时还原）"] =
+        ["状态：未安装（检测到备份文件，可还原）"] =
             "State: not installed (a backup file was found)  ·  状态：未安装（检测到备份文件）",
         ["，备份存在"] = ", backup present  ·  ，备份存在",
         ["（注意：主程序还留着旧补丁，请点「卸载」后手动还原）"] =
@@ -112,8 +112,8 @@ internal static class Loc
             "PotPlayer is already running — injecting the same DLL again runs no new code, please exit it first.",
         ["规则已保存。DLL 每 2 秒重读一次配置，不必重启播放器。"] =
             "Rules saved. The DLL re-reads the config every 2 s; no need to restart the player.  ·  规则已保存",
-        ["操作未完成（详情见弹出的提示框）。"] =
-            "The operation did not finish (see the message box).  ·  操作未完成",
+        ["操作未完成。"] =
+            "The operation did not finish.  ·  操作未完成。",
         ["IFEO 启动注入已安装：以后每次启动 PotPlayer 都会自动注入，不需要任何常驻进程。"] =
             "Injection installed: PotPlayer gets injected on every start, with no resident process.",
         ["IFEO 启动注入已卸载：PotPlayer 恢复成原样。"] =
