@@ -681,6 +681,9 @@ internal sealed class MainForm : Form
                     TextRenderer.MeasureText(Loc.T(button.Text), button.Font).Width + 36, 44);
                 button.Margin = new Padding(0, 0, 8, 0);
             }
+            // 按钮尺寸变了，FlowLayoutPanel 不会自己重排（它按加入时的旧宽度摆位置，
+            // 于是双语长文案互相压住）——这里显式重排一次。
+            line.PerformLayout();
         }
 
         var grid = new TableLayoutPanel
