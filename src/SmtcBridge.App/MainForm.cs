@@ -303,10 +303,10 @@ internal sealed class MainForm : Form
             .Replace("文件名为空", "Filename is empty · 文件名为空")
             .Replace("规则中没有占位符，整体作为标题",
                      "No placeholder in the pattern; the whole name is used as the title · 规则中没有占位符，整体作为标题")
-            .Replace("规则没匹配上，回退为「整体作为标题」",
-                     "Pattern did not match; the whole name is used as the title · 规则没匹配上，回退为「整体作为标题」")
-            .Replace("规则没捕获到任何字段，回退为「整体作为标题」",
-                     "No field captured; the whole name is used as the title · 规则没捕获到任何字段，回退为「整体作为标题」");
+            .Replace("规则未匹配，回退为「整体作为标题」",
+                     "Pattern did not match; the whole name is used as the title · 规则未匹配，回退为「整体作为标题」")
+            .Replace("规则未捕获到任何字段，回退为「整体作为标题」",
+                     "No field captured; the whole name is used as the title · 规则未捕获到任何字段，回退为「整体作为标题」");
 
         _preview.Text = "▸ " + note + (_tagFirst.Checked ? "" : "（当前为仅文件名模式）");
         _preview.BackColor = Theme.Surface;

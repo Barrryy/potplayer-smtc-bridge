@@ -81,7 +81,7 @@ internal static class MetaRules
         if (failed || !captured)
         {
             return new Preview(stem, "", "", "", 0, false,
-                failed ? "规则没匹配上，回退为「整体作为标题」" : "规则没捕获到任何字段，回退为「整体作为标题」");
+                failed ? "规则未匹配，回退为「整体作为标题」" : "规则未捕获到任何字段，回退为「整体作为标题」");
         }
 
         var note = $"匹配成功：{Describe(title, artist, album, albumArtist, track)}";
