@@ -7,7 +7,7 @@ namespace {
 
 DWORD WINAPI InitThread(LPVOID) {
     LogInit();
-    LogF("=== PotPlayerSmtcHook v0.1.2 (recon build) ===");
+    LogF("=== PotPlayerSmtcHook v0.8.0 ===");
     LogProcessInfo();
     InstallProbes();
     LogF("=== recon ready; play something in PotPlayer ===");
