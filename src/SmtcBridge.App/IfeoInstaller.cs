@@ -32,6 +32,28 @@ internal static class IfeoInstaller
 
     private static string Normalize(string? path) => (path ?? string.Empty).Trim().Trim('"');
 
+    /// <summary>
+    /// 安装目录里应有的四个文件，缺哪些就返回哪些（用逗号隔开）；齐全返回 null。
+    /// 注册表那个键只保证「系统会去拉起注入器」，不保证注入器手边还有模块和规则。
+    /// </summary>
+    public static string? MissingFiles()
+    {
+        string[] required =
+        {
+            Path.GetFileName(AppPaths.InstalledInjector),
+            HookDllName,
+            IniName,
+            MarkerName,
+        };
+
+        var missing = new List<string>();
+        foreach (var name in required)
+        {
+            if (!File.Exists(Path.Combine(AppPaths.InstallDir, name))) missing.Add(name);
+        }
+        return missing.Count == 0 ? null : string.Join(", ", missing);
+    }
+
     /// <summary>读取当前 IFEO Debugger 值，没有则返回 null。</summary>
     public static string? DebuggerFor(string exePath)
     {

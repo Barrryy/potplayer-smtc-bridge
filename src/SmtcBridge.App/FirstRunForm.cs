@@ -18,7 +18,7 @@ internal sealed class FirstRunForm : Form
     {
         _config = config;
 
-        Text = "PotPlayer SMTC Bridge — 首次使用";
+        Text = "PotPlayer SMTC Bridge — First Run 首次使用";
         StartPosition = FormStartPosition.CenterScreen;
         FormBorderStyle = FormBorderStyle.FixedDialog;
         MaximizeBox = false;

@@ -403,6 +403,15 @@ internal sealed class MainForm : Form
                 $"State: injection installed — files live in {AppPaths.InstallDir}; "
                 + "this program folder can be moved or deleted freely.\n"
                 + $"状态：启动注入已安装 —— 文件位于 {AppPaths.InstallDir}，本程序目录可随意移动或删除。";
+
+            if (IfeoInstaller.MissingFiles() is { Length: > 0 } missing)
+            {
+                _patchState.Text += "\nIncomplete install — missing in the install folder: " + missing
+                                  + "\n安装不完整 —— 安装目录里缺文件：" + missing;
+                _patchState.ForeColor = Theme.Warn;
+                return;
+            }
+
             _patchState.ForeColor = Theme.Good;
             if (PePatcher.IsPatched(path))
             {
