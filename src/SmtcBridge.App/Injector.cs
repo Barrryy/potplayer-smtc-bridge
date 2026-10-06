@@ -96,8 +96,9 @@ internal static class Injector
             using var key = Registry.CurrentUser.OpenSubKey(AutoStartKey, writable: true);
             if (key is null) return false;
             if (enable)
-                // 注册界面程序自己：启动后静默驻留并自动注入，不弹任何窗口
-                key.SetValue(AutoStartValue, $"\"{AppPaths.SelfExe}\"");
+                // 注册界面程序自己，并明确带上 --silent：
+                // 只有开机自启这条路径静默，用户手动双击时要能看见主界面。
+                key.SetValue(AutoStartValue, $"\"{AppPaths.SelfExe}\" --silent");
             else
                 key.DeleteValue(AutoStartValue, throwOnMissingValue: false);
             return true;

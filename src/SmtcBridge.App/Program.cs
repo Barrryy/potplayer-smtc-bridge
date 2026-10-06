@@ -38,19 +38,20 @@ internal static class Program
             justRegistered = true;
         }
 
-        var wantUi = args.Any(a => a.Equals("--ui", StringComparison.OrdinalIgnoreCase));
+        // 双击（无参数）默认把主界面开出来——用户手动运行就该看到东西。
+        // 只有开机自启项才带 --silent，那种情况才真正静默。
+        var silent = args.Any(a => a.Equals("--silent", StringComparison.OrdinalIgnoreCase));
 
         // 只允许一个后台实例；已有实例在跑时，--ui 只是把它叫出来
         var mutex = SilentApp.TryAcquireSingleInstance();
         if (mutex is null)
         {
-            if (wantUi) SilentApp.SignalExistingInstance();
+            // 手动运行（非 --silent）时，把已在跑的后台实例的主界面叫出来
+            if (!silent) SilentApp.SignalExistingInstance();
             return;
         }
 
-        // 默认静默：无窗口、无托盘、无任务栏项。
-        // 例外：刚走完首次向导，直接把主界面开出来——否则用户找不到「安装到 PotPlayer」。
-        Application.Run(new SilentApp(config, mutex, showWindow: wantUi || justRegistered));
+        Application.Run(new SilentApp(config, mutex, showWindow: !silent || justRegistered));
     }
 
     private static int RunOneShot(Action action, string successText, bool quiet)
