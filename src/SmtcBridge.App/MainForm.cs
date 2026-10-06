@@ -710,6 +710,35 @@ internal sealed class MainForm : Form
         grid.Controls.Add(row, 0, 0);
         grid.Controls.Add(row2, 0, 1);
         card.AddRow(grid, 0);
+
+        // 上面那两排容器弃用：改成「一颗按钮一个单元格」的表格，单元格之间永不重叠。
+        grid.Visible = false;
+        var cells = new TableLayoutPanel
+        {
+            ColumnCount = 3,
+            RowCount = 2,
+            AutoSize = true,
+            AutoSizeMode = AutoSizeMode.GrowAndShrink,
+            BackColor = Theme.Surface,
+            Margin = new Padding(0),
+        };
+        for (var c = 0; c < 3; c++) cells.ColumnStyles.Add(new ColumnStyle(SizeType.AutoSize));
+        cells.RowStyles.Add(new RowStyle(SizeType.AutoSize));
+        cells.RowStyles.Add(new RowStyle(SizeType.AutoSize));
+
+        foreach (var b in new[] { launch, inject, watch, openLog }) b.Margin = new Padding(0, 0, 8, 0);
+        cells.Controls.Add(launch, 0, 0);
+        cells.Controls.Add(inject, 1, 0);
+        cells.Controls.Add(watch, 2, 0);
+        cells.Controls.Add(openLog, 0, 1);
+        var exitButton = row2.Controls.OfType<Button>().FirstOrDefault();
+        if (exitButton is not null)
+        {
+            exitButton.Margin = new Padding(0, 0, 8, 0);
+            cells.Controls.Add(exitButton, 1, 1);
+        }
+
+        card.AddRow(cells, 8);
         return card;
     }
 
