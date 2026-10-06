@@ -94,7 +94,83 @@ void LogClose() {
     }
 }
 
+// 日志统一输出英文：按「格式串」整条映射，%s/%lu/%p 等占位符原样保留。
+// 表里没有的原样输出 —— 漏翻最多保持中文，不会写坏日志。
+static const char* TranslateLog(const char* fmt) {
+    struct Entry { const char* zh; const char* en; };
+    static const Entry kTable[] = {
+        {"[capture] combase.dll 不可用", "[capture] combase.dll unavailable"},
+        {"[capture] VirtualProtect 失败: %lu", "[capture] VirtualProtect failed: %lu"},
+        {"[capture] vtable[6] 已经是本模块的钩子，跳过以免递归",
+         "[capture] vtable[6] is already this module's hook, skipping to avoid recursion"},
+        {"[capture] WindowsCreateString 失败: 0x%08lX", "[capture] WindowsCreateString failed: 0x%08lX"},
+        {"[capture] 主动激活 interop 工厂: hr=0x%08lX factory=%p",
+         "[capture] activating interop factory: hr=0x%08lX factory=%p"},
+        {"[capture] 工厂 %p 的 vtable %p 已挂过，跳过",
+         "[capture] factory %p vtable %p already hooked, skipping"},
+        {"[capture] 工厂 vtable 布局：", "[capture] factory vtable layout:"},
+        {"[capture] 已挂钩（第 %d 个），等待 GetForWindow 调用",
+         "[capture] hooked (#%d), waiting for GetForWindow"},
+        {"[capture] 新工厂 %p, vtable=%p, vtable[6]=%p",
+         "[capture] new factory %p, vtable=%p, vtable[6]=%p"},
+        {"[capture] 缺少 RoGetActivationFactory / WindowsCreateString",
+         "[capture] missing RoGetActivationFactory / WindowsCreateString"},
+        {"[eat]   在 %p 分配失败: %lu", "[eat]   allocation at %p failed: %lu"},
+        {"[eat] %s 是转发器，跳过", "[eat] %s is a forwarder, skipping"},
+        {"[eat] %s 的 RVA 越界", "[eat] %s: RVA out of range"},
+        {"[eat] %s 跳板分配于 %p (距模块 0x%llX)", "[eat] %s trampoline at %p (0x%llX from module)"},
+        {"[eat] %s: 没有导出目录", "[eat] %s: no export directory"},
+        {"[eat] %s: 附近 4GB 内找不到可分配内存", "[eat] %s: no allocatable memory within 4GB"},
+        {"[eat] 扫描在 %p 处停止（VirtualQuery 失败）", "[eat] scan stopped at %p (VirtualQuery failed)"},
+        {"[eat] 找到 %s: ordinal=%u slotRva=0x%08lX", "[eat] found %s: ordinal=%u slotRva=0x%08lX"},
+        {"[eat] 模块 %p 导出目录: names=%lu funcs=%lu",
+         "[eat] module %p export directory: names=%lu funcs=%lu"},
+        {"[fallback] GetForWindow 已被调用，无需兜底",
+         "[fallback] GetForWindow already called, no fallback needed"},
+        {"[fallback] 没找到可用窗口", "[fallback] no usable window found"},
+        {"[fallback] 没等到 GetForWindow 调用，改用主窗口自取: hwnd=%p class=%s",
+         "[fallback] GetForWindow never came; using the main window instead: hwnd=%p class=%s"},
+        {"[probe] combase 导出表已改写: RoActivateInstance 原地址=%p",
+         "[probe] combase export table patched: RoActivateInstance was %p"},
+        {"[probe] combase 导出表已改写: RoGetActivationFactory 原地址=%p",
+         "[probe] combase export table patched: RoGetActivationFactory was %p"},
+        {"[probe] combase 导出表改写失败（RoActivateInstance），退回 IAT 补丁",
+         "[probe] patching the combase export table failed (RoActivateInstance); falling back to IAT"},
+        {"[probe] combase 导出表改写失败（RoGetActivationFactory），退回 IAT 补丁",
+         "[probe] patching the combase export table failed (RoGetActivationFactory); falling back to IAT"},
+        {"[probe] CreateFileW 挂接未启用（在 DLL 同目录放置 PotPlayerSmtcHook.hookfiles 可开启）",
+         "[probe] CreateFileW hook disabled (drop PotPlayerSmtcHook.hookfiles next to the DLL to enable)"},
+        {"[probe] 初次挂接完成，命中 %d 个导入项",
+         "[probe] initial hooking done, %d import entries patched"},
+        {"[spy] vtable[%d] 被调用！self=%p", "[spy] vtable[%d] called! self=%p"},
+        {"[watch] %s 补挂 %d 个导入项", "[watch] %s: late-hooked %d import entries"},
+        {"[watch] LdrRegisterDllNotification 不可用，退化为轮询",
+         "[watch] LdrRegisterDllNotification unavailable, falling back to polling"},
+        {"[watch] 模块监视结束", "[watch] module watch finished"},
+        {"[writer] get_DisplayUpdater 失败 hr=0x%08lX",
+         "[writer] get_DisplayUpdater failed hr=0x%08lX"},
+        {"[writer] get_Genres 失败，跳过流派", "[writer] get_Genres failed, skipping genres"},
+        {"[writer] get_MusicProperties 失败 hr=0x%08lX",
+         "[writer] get_MusicProperties failed hr=0x%08lX"},
+        {"[writer] 就绪：WindowsCreateString=%p PSGetPropertyKeyFromName=%p",
+         "[writer] ready: WindowsCreateString=%p PSGetPropertyKeyFromName=%p"},
+        {"[writer] 已挂钩 DisplayUpdater::Update (vtable[%d])",
+         "[writer] hooked DisplayUpdater::Update (vtable[%d])"},
+        {"[writer] 拿不到 IMusicDisplayProperties，放弃",
+         "[writer] IMusicDisplayProperties unavailable, giving up"},
+        {"[writer] 配置: tag_first=%d pattern=%s", "[writer] config: tag_first=%d pattern=%s"},
+        {"[writer] 配置已重载: tag_first=%d pattern=%s",
+         "[writer] config reloaded: tag_first=%d pattern=%s"},
+        {"[writer] 首次写入完成", "[writer] first write done"},
+    };
+    for (const Entry& e : kTable) {
+        if (strcmp(fmt, e.zh) == 0) return e.en;
+    }
+    return fmt;
+}
+
 void LogF(const char* fmt, ...) {
+    fmt = TranslateLog(fmt);
     if (!g_inited) return;
     char body[2048] = {};
     va_list args;
