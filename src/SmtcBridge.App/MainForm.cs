@@ -16,6 +16,8 @@ internal sealed class MainForm : Form
     private readonly Label _preview = Theme.Label("", Theme.TextDim, Theme.FontSmall, 660);
     private readonly DarkInput _log = new(multiline: true, height: 132);
     private readonly Label _patchState = Theme.Label("", Theme.TextDim, Theme.FontSmall, 660);
+    /// <summary>安装成功时显示在状态行下面的红色后果提示。</summary>
+    private readonly Label _patchWarning = Theme.Label("", Theme.Bad, Theme.FontSmall, 900);
 
     private bool _loading;
     private bool _allowClose;
@@ -340,6 +342,8 @@ internal sealed class MainForm : Form
 
         _patchState.BackColor = Theme.Surface;
         card.AddRow(_patchState, 8);
+        _patchWarning.BackColor = Theme.Surface;
+        card.AddRow(_patchWarning, 2);
 
         var installRow = Theme.Row(Theme.Surface);
         var install = Theme.PrimaryButton("安装启动注入");
@@ -475,6 +479,7 @@ internal sealed class MainForm : Form
 
     private void RefreshPatchState()
     {
+        _patchWarning.Text = string.Empty;   // 下面只有「已安装」分支会填它
         var path = _config.PotPlayerPath;
         if (string.IsNullOrEmpty(path) || !File.Exists(path))
         {
@@ -490,6 +495,15 @@ internal sealed class MainForm : Form
                 $"State: injection installed — files live in {AppPaths.InstallDir}; "
                 + "this program folder can be moved or deleted freely.\n"
                 + $"状态：启动注入已安装 —— 文件位于 {AppPaths.InstallDir}，本程序目录可移动或删除。\n" + "若需卸载本服务，请保留程序并按程序说明卸载。";
+
+            // 红色后果提示：这几个文件被手动删掉/挪走后，系统会按 IFEO 规则
+            // 去拉起一个不存在的注入器，PotPlayer 会完全打不开。
+            _patchWarning.Text =
+                "⚠ Do not delete or move the files inside the install folder on your own — "
+                + "Windows launches the injector from there on every PotPlayer start; "
+                + "if it is missing, PotPlayer will not start at all.\n"
+                + "⚠ 不要自行删除或移动安装目录里的文件：每次启动 PotPlayer 时系统会去那里拉起注入器，"
+                + "文件缺失会导致 PotPlayer 完全无法启动。";
 
             if (IfeoInstaller.MissingFiles() is { Length: > 0 } missing)
             {
