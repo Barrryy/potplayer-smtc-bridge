@@ -238,6 +238,15 @@ internal sealed class DarkInput : Panel
             Multiline = multiline,
             Dock = DockStyle.Fill,
         };
+
+        // 单行输入框 Dock=Fill 时不会垂直居中，永远贴着面板顶部（看起来就是"文字偏上、不在框里"）。
+        // 用一段上内边距把它压到中间：PreferredHeight 是输入框自然高度。
+        // 多行输入框保持铺满，不加这段。
+        if (!multiline)
+        {
+            Padding = new Padding(10, Math.Max(0, (height - Box.PreferredHeight) / 2), 10, 0);
+        }
+
         if (multiline)
         {
             Box.ScrollBars = ScrollBars.Vertical;
