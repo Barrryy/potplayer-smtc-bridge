@@ -31,6 +31,7 @@ internal static class Theme
 
     public static readonly Font FontBase = new("Microsoft YaHei UI", 9F);
     public static readonly Font FontSmall = new("Microsoft YaHei UI", 8.5F);
+    public static readonly Font FontSmallBold = new("Microsoft YaHei UI", 8.5F, FontStyle.Bold);
     public static readonly Font FontBold = new("Microsoft YaHei UI", 9F, FontStyle.Bold);
     public static readonly Font FontTitle = new("Microsoft YaHei UI", 15F, FontStyle.Bold);
     public static readonly Font FontMono = new("Consolas", 9F);

@@ -17,7 +17,7 @@ internal sealed class MainForm : Form
     private readonly DarkInput _log = new(multiline: true, height: 132);
     private readonly Label _patchState = Theme.Label("", Theme.TextDim, Theme.FontSmall, 660);
     /// <summary>安装成功时显示在状态行下面的红色后果提示。</summary>
-    private readonly Label _patchWarning = Theme.Label("", Theme.Bad, Theme.FontSmall, 900);
+    private readonly Label _patchWarning = Theme.Label("", Theme.Bad, Theme.FontSmallBold, 900);
 
     private bool _loading;
     private bool _allowClose;
