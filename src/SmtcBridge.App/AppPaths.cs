@@ -12,6 +12,9 @@ internal static class AppPaths
 
     public static string Loader => Path.Combine(AppDir, "SmtcLoader.exe");
 
+    /// <summary>IFEO 启动注入器：每次启动 PotPlayer 时由系统自动拉起。</summary>
+    public static string InjectorExe => Path.Combine(AppDir, "PotPlayerSmtcInjector.exe");
+
     /// <summary>与 DLL 同目录，DLL 会读它；界面写它。</summary>
     public static string Ini => Path.Combine(AppDir, "PotPlayerSmtcHook.ini");
 

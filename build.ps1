@@ -70,6 +70,14 @@ if ($dotnet) {
 # 删掉 build\PotPlayerSmtcHook.hookfiles 即可关闭。
 New-Item -ItemType File -Force -Path "$outDir\PotPlayerSmtcHook.hookfiles" | Out-Null
 
+Write-Host ''
+Write-Host '[4/5] 构建 IFEO 启动注入器 ...' -ForegroundColor Cyan
+# 由 IFEO(Debugger) 在每次启动 PotPlayer 时自动拉起：用 DEBUG_ONLY_THIS_PROCESS 创建目标
+# （绕开 IFEO 二次劫持），脱离调试后注入 DLL，然后立刻退出。不常驻、不留窗口。
+# -mwindows：GUI 子系统，双击/被拉起时都不会闪控制台窗口。
+& $gxx @commonFlags -mwindows -o "$outDir\PotPlayerSmtcInjector.exe" "$srcDir\SmtcBridge.Injector\main.cpp" -lpsapi -lshell32
+if ($LASTEXITCODE -ne 0) { throw '启动注入器构建失败' }
+
 if ($Tests) {
     Write-Host ''
     Write-Host '[4/4] 构建注入测试靶子 ...' -ForegroundColor Cyan

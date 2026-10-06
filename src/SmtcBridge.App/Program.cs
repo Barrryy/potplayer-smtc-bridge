@@ -8,6 +8,20 @@ internal static class Program
         ApplicationConfiguration.Initialize();
 
         // 提权后的一次性操作：给 PotPlayer 打导入表补丁 / 还原
+        // 新的安装方式：IFEO 启动注入（不改动 PotPlayer 的任何文件）
+        if (args.Length >= 2 && args[0] == "--install-ifeo")
+        {
+            Environment.Exit(RunOneShot(() => IfeoInstaller.Install(args[1]), "IFEO 启动注入已安装",
+                quiet: args.Contains("--quiet")));
+            return;
+        }
+        if (args.Length >= 2 && args[0] == "--uninstall-ifeo")
+        {
+            Environment.Exit(RunOneShot(() => IfeoInstaller.Remove(args[1]), "IFEO 启动注入已卸载",
+                quiet: args.Contains("--quiet")));
+            return;
+        }
+
         if (args.Length >= 2 && args[0] == "--patch")
         {
             Environment.Exit(RunOneShot(() => PePatcher.Install(args[1]), "补丁已写入",

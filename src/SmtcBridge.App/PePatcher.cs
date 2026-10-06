@@ -48,6 +48,20 @@ internal static class PePatcher
     /// <summary>打补丁。会先备份成 &lt;exe&gt;.smtb-backup（只备份一次，保留最原始的版本）。</summary>
     public static void Install(string exePath)
     {
+        // v0.6.3 起停用（Restore 仍可用）：
+        // 实测 PotPlayerMini64.exe 是 Themida(WinLicense) 加壳程序，会自查文件长度与内容，
+        // 任何改动都会让它拒绝启动并弹出 “Cannot find or init PotPlayer64.dll”；
+        // PotPlayer64.dll / MediaDB64.dll 又都带 Kakao 数字签名并被 WinVerifyTrust 校验，
+        // 替身 DLL 会被判定为 “modified or hacked”。
+        // 结论：不能再改 PotPlayer 的任何文件，安装方式改为 IFEO 启动注入。
+        throw new NotSupportedException(
+            "主程序补丁方式已停用：PotPlayer 主程序带自校验，改文件会导致它无法启动。" +
+            "新的安装方式改为 IFEO 启动注入，不改动任何 PotPlayer 文件。");
+    }
+
+    /// <summary>旧的打补丁实现（已停用，仅留作历史排查与参考）。</summary>
+    private static void InstallLegacy(string exePath)
+    {
         if (!File.Exists(exePath))
             throw new FileNotFoundException("找不到目标程序", exePath);
         if (IsPatched(exePath))
@@ -292,11 +306,26 @@ internal static class PePatcher
         }
 
         // ---- 组装新文件 ----
-        // 非 slack 模式按 CFF 的做法截断叠加数据；slack 模式必须保留原文件长度
-        var outputSize = useSlack ? Math.Max((uint)file.Length, newRawPtr + contentSize)
-                                  : newRawPtr + contentSize;
+        // 绝不截断文件！
+        // 之前照 CFF 的做法把文件末尾"不属于任何节"的叠加数据切掉，
+        // 结果真实 PotPlayer 主程序切完之后起不来（报 PotPlayer64.dll 初始化失败）。
+        // 现在改成：把插入点之后的原有内容整体后移，一个字节都不丢。
+        // 原地写得下就一个字节都别动：PotPlayer 主程序会自查文件长度，
+        // 长度一变直接拒绝启动（Cannot find or init PotPlayer64.dll）。
+        var fitsInPlace = newRawPtr + contentSize <= (uint)file.Length;
+        var needsShift = !useSlack && !fitsInPlace && newRawPtr < (uint)file.Length;
+        var outputSize = Math.Max((uint)file.Length,
+                                  needsShift ? newRawPtr + contentSize + ((uint)file.Length - newRawPtr)
+                                             : newRawPtr + contentSize);
         var output = new byte[outputSize];
         Array.Copy(file, output, Math.Min(file.Length, (int)outputSize));
+
+        if (needsShift)
+        {
+            // 把 [newRawPtr, EOF) 的原有数据搬到我们内容之后
+            var tailLength = file.Length - (int)newRawPtr;
+            Array.Copy(file, (int)newRawPtr, output, (int)(newRawPtr + contentSize), tailLength);
+        }
 
         if (!useSlack)
         {

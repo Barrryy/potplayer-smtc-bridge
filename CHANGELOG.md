@@ -2,6 +2,29 @@
 
 本项目遵循 [语义化版本](https://semver.org/lang/zh-CN/)。
 
+## [0.7.0] - 2026-10-06
+
+### 变更
+
+- **安装方式改为 IFEO 启动注入，不再改动 PotPlayer 的任何文件。**
+  实测 `PotPlayerMini64.exe` 带 Themida(WinLicense) 壳并自查文件：
+  - 尾部追加 4096 个零字节 → 拒绝启动，报 `Cannot find or init PotPlayer64.dll`；
+  - 保持文件长度不变、只改导入表 → 同样拒绝启动（说明它连内容一起校验）；
+  - 用转发壳顶掉 `PotPlayer64.dll` → 报 `PotPlayer64.dll is modified or hacked...`
+    （主程序导入 `WINTRUST.dll`，会用 `WinVerifyTrust` 校验核心 DLL 的 Kakao 签名）。
+- 新增 `PotPlayerSmtcInjector.exe`：由 IFEO 在每次启动 PotPlayer 时拉起，注入完立刻退出。
+  - 必须用 `DEBUG_ONLY_THIS_PROCESS` 创建目标，否则 IFEO 会二次劫持 → 无限递归（实测 0→1→2→3）。
+  - 创建后立即 `DebugActiveProcessStop` 脱离调试，实测目标 `PEB.BeingDebugged=0`、`NtGlobalFlag=0`。
+  - 等目标加载器就绪（枚举到 `kernel32.dll`）再注入，避免远程线程跳到未映射地址把 PotPlayer 打崩。
+- 新增 `IfeoInstaller`（HKLM 注册表读写、只删自己写的键）与
+  `--install-ifeo` / `--uninstall-ifeo` 命令行。
+
+### 停用
+
+- `PePatcher.Install`（导入表补丁）停用并改为抛异常，只保留 `Restore`，
+  供已经被打过补丁的机器还原回原版。
+- 界面文案同步：`安装到 PotPlayer` → `安装启动注入`，`还原 PotPlayer` → `卸载启动注入`。
+
 ## [0.6.0] - 2026-10-06
 
 ### 新增

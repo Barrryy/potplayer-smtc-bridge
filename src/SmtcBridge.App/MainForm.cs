@@ -306,19 +306,20 @@ internal sealed class MainForm : Form
         // ---------------- 方式一：一次性安装
         card.AddRow(Theme.Label("方式一 · 一次性安装（推荐）", Theme.Accent, Theme.FontBold), 0);
         card.AddRow(Theme.Label(
-            "改写 PotPlayer 主程序的导入表，让它启动时自己加载本工具。\n"
-            + "装一次之后：不需要后台进程、不需要开机启动任何东西、重启也照样生效。\n"
-            + "代价是 PotPlayer 更新覆盖主程序后要重打一次；会自动备份，随时可还原。",
+            "在 Windows 里登记一条启动规则（IFEO），每次启动 PotPlayer 时\n"
+            + "先拉起本工具的注入器，把注入模块塞进进程后立刻退出。\n"
+            + "不碰 PotPlayer 任何文件（它的主程序带 Themida 壳 + 签名自校验，改一个字节就起不来）。\n"
+            + "装一次之后：无后台进程、无开机启动项、重启照样生效、PotPlayer 自己更新也不用重装。",
             Theme.TextDim, Theme.FontSmall, 660), 6);
 
         _patchState.BackColor = Theme.Surface;
         card.AddRow(_patchState, 8);
 
         var installRow = Theme.Row(Theme.Surface);
-        var install = Theme.PrimaryButton("安装到 PotPlayer");
-        install.Click += (_, _) => DoPatch(install: true);
-        var restore = Theme.GhostButton("还原 PotPlayer");
-        restore.Click += (_, _) => DoPatch(install: false);
+        var install = Theme.PrimaryButton("安装启动注入");
+        install.Click += (_, _) => DoIfeo(install: true);
+        var restore = Theme.GhostButton("卸载启动注入");
+        restore.Click += (_, _) => DoIfeo(install: false);
         installRow.Controls.Add(install);
         installRow.Controls.Add(restore);
         card.AddRow(installRow, 8);
@@ -384,6 +385,25 @@ internal sealed class MainForm : Form
             return;
         }
 
+        // 新安装方式：IFEO 启动注入（不改动 PotPlayer 任何文件）
+        if (IfeoInstaller.IsInstalledByUs(path))
+        {
+            _patchState.Text = "状态：IFEO 启动注入已安装 —— 每次启动 PotPlayer 自动注入，无任何常驻进程";
+            _patchState.ForeColor = Theme.Good;
+            if (PePatcher.IsPatched(path))
+            {
+                _patchState.Text += "（注意：主程序还留着旧补丁，请点「卸载」后手动还原）";
+                _patchState.ForeColor = Theme.Warn;
+            }
+            return;
+        }
+        if (IfeoInstaller.ForeignDebugger(path) is { Length: > 0 } other)
+        {
+            _patchState.Text = $"状态：未安装 —— 但 IFEO 里已有别的 Debugger：{other}";
+            _patchState.ForeColor = Theme.Warn;
+            return;
+        }
+
         if (PePatcher.IsPatched(path))
         {
             _patchState.Text = "状态：已安装（PotPlayer 每次启动都会自动加载本工具）"
@@ -400,6 +420,40 @@ internal sealed class MainForm : Form
             _patchState.Text = "状态：未安装（当前依赖后台进程自动注入）";
             _patchState.ForeColor = Theme.TextDim;
         }
+    }
+
+    /// <summary>安装/卸载 IFEO 启动注入（写 HKLM，需要管理员，走 UAC 提权）。</summary>
+    private void DoIfeo(bool install)
+    {
+        var path = _config.PotPlayerPath;
+        if (string.IsNullOrEmpty(path) || !File.Exists(path))
+        {
+            AppendLog("还没定位到 PotPlayer。");
+            return;
+        }
+
+        var verb = install ? "--install-ifeo" : "--uninstall-ifeo";
+        try
+        {
+            using var process = Process.Start(new ProcessStartInfo
+            {
+                FileName = AppPaths.SelfExe,
+                Arguments = $"{verb} \"{path}\"",
+                UseShellExecute = true,
+                Verb = "runas",   // 只有这一步需要管理员
+            });
+            process?.WaitForExit();
+            AppendLog(process?.ExitCode == 0
+                ? (install
+                    ? "IFEO 启动注入已安装：以后每次启动 PotPlayer 都会自动注入，不需要任何常驻进程。"
+                    : "IFEO 启动注入已卸载：PotPlayer 恢复成原样。")
+                : "操作未完成（详情见弹出的提示框）。");
+        }
+        catch (Exception ex)
+        {
+            AppendLog("操作失败：" + ex.Message);
+        }
+        RefreshPatchState();
     }
 
     private void DoPatch(bool install)

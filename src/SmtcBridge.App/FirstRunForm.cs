@@ -148,10 +148,9 @@ internal sealed class FirstRunForm : Form
         var card = new Card("② 启动方式");
         card.AddRow(_autoStart, 0);
         card.AddRow(Theme.Label(
-            "下一步在主界面点「安装到 PotPlayer」：改写一次它的主程序导入表，"
-            + "之后不需要任何常驻进程，重启也生效。\n"
-            + "如果不想动主程序，就勾上这一项：程序会在后台静默运行（无窗口、无托盘），"
-            + "每次 PotPlayer 启动时自动注入。",
+            "下一步在主界面点「安装启动注入」：登记一条 IFEO 启动规则，"
+            + "每次启动 PotPlayer 时自动注入，不碰它的任何文件，也不需要常驻进程。\n"
+            + "不想要这个规则时，点「卸载启动注入」即可，PotPlayer 恢复原样。",
             Theme.TextDim, Theme.FontSmall, 660), 8);
         return card;
     }

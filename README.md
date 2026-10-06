@@ -83,6 +83,33 @@ PotPlayer 的 SMTC 实现位于 `MediaDB64.dll`（内部代号 StreetPlayer）�
 
 ## 使用
 
+### 安装方式：IFEO 启动注入（v0.7 起）
+
+> v0.6 的「改写主程序导入表」已废弃。实测 `PotPlayerMini64.exe` 带 Themida(WinLicense) 壳，
+> 会自查文件长度与内容；`PotPlayer64.dll` / `MediaDB64.dll` 又都带 Kakao 签名、
+> 主程序用 `WinVerifyTrust` 校验它们。**动 PotPlayer 的任何文件都会让它拒绝启动。**
+> 证据见 [docs/06-ifeo-install.md](docs/06-ifeo-install.md)。
+
+安装时只在注册表里写一个键：
+
+```
+HKLM\SOFTWARE\Microsoft\Windows NT\CurrentVersion\Image File Execution Options\PotPlayerMini64.exe
+    Debugger = "<本程序目录>\PotPlayerSmtcInjector.exe"
+```
+
+之后每次启动 PotPlayer，Windows 会先拉起 `PotPlayerSmtcInjector.exe`：
+
+1. 用 `DEBUG_ONLY_THIS_PROCESS` 创建 PotPlayer —— 这是为了绕开 IFEO 的二次劫持
+   （普通 `CreateProcess` 会 level 0→1→2→3 无限递归，实测）；
+2. 目标进程由内核保持挂起，随即 `DebugActiveProcessStop` 脱离：
+   主线程执行第一条指令之前 `PEB.BeingDebugged` 就已经是 0（实测），Themida 看不到调试器；
+3. 等它的加载器就绪（`kernel32.dll` 已映射）后 `CreateRemoteThread(LoadLibraryW)`
+   注入 `PotPlayerSmtcHook.dll`；
+4. 注入器自己立刻退出。
+
+没有常驻进程、没有服务、没有开机启动项，也不改动 PotPlayer 的任何文件。
+卸载就是删掉那个注册表键（界面里一键完成）。PotPlayer 自己更新后也不需要重装。
+
 ### 图形界面（推荐）
 
 `build\PotPlayerSmtcBridge.exe` 是深色主题的前端。**只有第一次运行会弹窗口**——
