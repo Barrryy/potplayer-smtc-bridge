@@ -616,13 +616,15 @@ internal sealed class MainForm : Form
         // 双语翻译让按钮变宽后它不会重排，相邻按钮就会互相压住（重叠的根因）。
         var row = new Panel { Height = 44, BackColor = Theme.Surface, Margin = new Padding(0) };
 
-        var launch = Theme.PrimaryButton("启动并注入");
+        // 按钮文字先翻译再交给容器：按钮是 AutoSize 的，容器按「加入那一刻的文字宽度」
+        // 排位置；如果等加入之后再翻译，位置会按短中文排、按钮却变宽 -> 互相压住。
+        var launch = Theme.PrimaryButton(Loc.T("启动并注入"));
         launch.Click += (_, _) => LaunchAndInject();
 
-        var inject = Theme.GhostButton("注入到已运行的 PotPlayer");
+        var inject = Theme.GhostButton(Loc.T("注入到已运行的 PotPlayer"));
         inject.Click += (_, _) => InjectRunning();
 
-        var watch = Theme.GhostButton("后台监听");
+        var watch = Theme.GhostButton(Loc.T("后台监听"));
         watch.Click += (_, _) =>
         {
             var process = Injector.StartWatch();
@@ -631,7 +633,7 @@ internal sealed class MainForm : Form
                 : $"监听已启动（PID {process.Id}）：PotPlayer 启动时将自动注入。");
         };
 
-        var openLog = Theme.GhostButton("打开日志目录");
+        var openLog = Theme.GhostButton(Loc.T("打开日志目录"));
         openLog.Click += (_, _) =>
         {
             Directory.CreateDirectory(AppPaths.LogDir);
@@ -651,7 +653,7 @@ internal sealed class MainForm : Form
         row2.Controls.Add(openLog);
         if (_onExit is not null)
         {
-            var exit = Theme.GhostButton("退出后台程序");
+            var exit = Theme.GhostButton(Loc.T("退出后台程序"));
             exit.ForeColor = Theme.Bad;
             exit.Click += (_, _) =>
             {
