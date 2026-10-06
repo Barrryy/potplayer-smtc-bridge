@@ -170,6 +170,7 @@ internal sealed class Card : TableLayoutPanel
 
     public Card(string title, int radius = 12)
     {
+        title = Loc.T(title);
         _radius = radius;
         ColumnCount = 1;
         ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 100));
@@ -192,6 +193,7 @@ internal sealed class Card : TableLayoutPanel
 
     public void AddRow(Control control, int topMargin = 8)
     {
+        Loc.ApplyDeep(control);
         control.Margin = new Padding(0, topMargin, 0, 0);
         if (control is Label label) label.BackColor = Theme.Surface;
         Controls.Add(control);
