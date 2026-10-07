@@ -13,6 +13,11 @@
 
 #include "console.h"
 
+// MinGW 默认的 _WIN32_WINNT 低于 Vista，processthreadsapi.h 里没有这条声明，
+// 但 kernel32 一直导出它 —— 自己声明一份即可。
+extern "C" WINAPI BOOL QueryFullProcessImageNameW(HANDLE hProcess, DWORD dwFlags,
+                                                 LPWSTR lpExeName, PDWORD lpdwSize);
+
 namespace {
 
 const wchar_t* kDefaultProcess = L"PotPlayerMini64.exe";
@@ -66,6 +71,26 @@ DWORD FindProcessId(const wchar_t* name) {
     }
     CloseHandle(snap);
     return pid;
+}
+
+std::wstring BaseNameOf(const std::wstring& path) {
+    const size_t pos = path.find_last_of(L"\\/");
+    return pos == std::wstring::npos ? path : path.substr(pos + 1);
+}
+
+// 取某个进程实际跑的是哪个 exe。
+// 装了 IFEO 时 CreateProcess 返回的不是目标本身，而是被换上去的 Debugger，
+// 只能靠映像名分辨。
+std::wstring ImageNameOfPid(DWORD pid) {
+    HANDLE process = OpenProcess(PROCESS_QUERY_LIMITED_INFORMATION, FALSE, pid);
+    if (!process) return std::wstring();
+
+    wchar_t path[MAX_PATH] = {};
+    DWORD size = MAX_PATH;
+    std::wstring name;
+    if (QueryFullProcessImageNameW(process, 0, path, &size)) name = BaseNameOf(path);
+    CloseHandle(process);
+    return name;
 }
 
 bool CheckArchitecture(HANDLE process) {
@@ -172,6 +197,19 @@ int LaunchAndInject(const std::wstring& exePath, const std::wstring& dllPath) {
     }
 
     PrintW(L"[*] 已挂起启动 PID %lu，准备注入\n", pi.dwProcessId);
+
+    // IFEO(Debugger) 在场时，CreateProcess 换上来的是那个调试器进程 ——
+    // 注进去等于把 DLL 注进本工具的启动注入器。真正的注入由它自己完成。
+    const std::wstring actual = ImageNameOfPid(pi.dwProcessId);
+    if (!actual.empty() && lstrcmpiW(actual.c_str(), BaseNameOf(exePath).c_str()) != 0) {
+        PrintW(L"[*] IFEO 已接管启动：实际进程是 %ls，注入由它完成，跳过手动注入\n",
+               actual.c_str());
+        ResumeThread(pi.hThread);
+        CloseHandle(pi.hThread);
+        CloseHandle(pi.hProcess);
+        return 0;
+    }
+
     const bool ok = InjectIntoProcess(pi.hProcess, dllPath);
     ResumeThread(pi.hThread);
 

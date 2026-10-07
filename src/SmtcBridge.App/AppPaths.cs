@@ -23,6 +23,9 @@ internal static class AppPaths
     /// <summary>DLL 实际会被加载的目录：装过就是安装目录，没装就是本程序目录。</summary>
     public static string RuntimeDir => Installed ? InstallDir : AppDir;
 
+    /// <summary>实际会被加载的那一份注入模块（与 RuntimeDir 同目录）。</summary>
+    public static string RuntimeHookDll => Path.Combine(RuntimeDir, "PotPlayerSmtcHook.dll");
+
     /// <summary>本程序自身，用于注册开机自启。</summary>
     public static string SelfExe => Path.Combine(AppDir, "PotPlayerSmtcBridge.exe");
 

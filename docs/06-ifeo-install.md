@@ -64,3 +64,7 @@ HKLM\SOFTWARE\Microsoft\Windows NT\CurrentVersion\Image File Execution Options\P
 - 注入模块日志：`%TEMP%\potplayer-smtc-bridge\hook-<pid>-<时间>.log`
 - 模块列表里应该只有**一份** `PotPlayerSmtcHook.dll`；
   出现两份说明主程序还留着 v0.6 的导入表补丁，先用 `--restore` 还原。
+- **只看到 `inject ok` 不代表元数据写成了**：日志里还要有
+  `[attach] metadata writer attached` 和 `[writer] first write done`。
+  会话对象刚建好时 `get_MusicProperties` 会返回 `0x80070032`（还没就绪），
+  写入器靠重试挂载，所以这两行可能比 `inject ok` 晚 1～10 秒出现。

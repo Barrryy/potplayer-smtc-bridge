@@ -30,6 +30,16 @@ internal static class Injector
         };
         foreach (var arg in args) info.ArgumentList.Add(arg);
 
+        // 注入哪一份 DLL 必须和 IFEO 用的是同一份（装过就是安装目录那份）。
+        // 否则同一个进程里会塞进两份模块：后注入的那份发现 vtable 已被前一份改过，
+        // 只能放弃挂接，白跑一趟。
+        var runtimeDll = AppPaths.RuntimeHookDll;
+        if (File.Exists(runtimeDll))
+        {
+            info.ArgumentList.Add("--dll");
+            info.ArgumentList.Add(runtimeDll);
+        }
+
         try
         {
             using var process = Process.Start(info);
