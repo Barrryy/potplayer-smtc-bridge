@@ -17,5 +17,10 @@ void SmtcWriter_Init();
 // 重新读取 PotPlayerSmtcHook.ini（前端保存设置后调用，可不重启播放器生效）
 void SmtcWriter_ReloadConfig();
 
-// 拿到 SMTC 对象后调用：解析出各接口、挂钩 Update、并立刻写一次
-void SmtcWriter_Attach(void* smtcObject);
+// 拿到 SMTC 对象后调用：解析出各接口、挂钩 Update、并立刻写一次。
+//
+// 返回 false 表示这次没挂上 —— 最常见的是「对象太新」：进程刚起来约 1 秒时
+// DisplayUpdater 还没建好，get_MusicProperties 会返回 0x80070032
+// (E_NOT_SUPPORTED)。调用方应当稍后重试，不要当成永久失败。
+// 已经挂好之后再调用会直接返回 true（幂等）。
+bool SmtcWriter_Attach(void* smtcObject);

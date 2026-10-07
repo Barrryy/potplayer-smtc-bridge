@@ -72,6 +72,7 @@ void* g_musicV2 = nullptr;
 void* g_musicV3 = nullptr;
 PFN_Update g_realUpdate = nullptr;
 bool g_updateHooked = false;
+bool g_attachWarned = false;   // 失败原因只报一次，重试不打日志洪水
 
 CRITICAL_SECTION g_lock;
 bool g_ready = false;
@@ -580,17 +581,22 @@ void SmtcWriter_SetCurrentFile(const wchar_t* path) {
     (void)changed;
 }
 
-void SmtcWriter_Attach(void* smtcObject) {
-    if (!smtcObject) return;
+bool SmtcWriter_Attach(void* smtcObject) {
+    if (!smtcObject) return false;
     if (!g_ready) SmtcWriter_Init();
+    if (g_updateHooked) return true;   // 已挂过，幂等返回
 
     void* updater = nullptr;
     const HRESULT hrUpdater =
         reinterpret_cast<PFN_GetObject>(VtableOf(smtcObject)[kSlotGetDisplayUpdater])(
             smtcObject, &updater);
     if (FAILED(hrUpdater) || !updater) {
-        LogF("[writer] get_DisplayUpdater 失败 hr=0x%08lX", static_cast<unsigned long>(hrUpdater));
-        return;
+        if (!g_attachWarned) {
+            LogF("[writer] get_DisplayUpdater 失败 hr=0x%08lX",
+                 static_cast<unsigned long>(hrUpdater));
+            g_attachWarned = true;
+        }
+        return false;
     }
 
     void* music = nullptr;
@@ -598,8 +604,12 @@ void SmtcWriter_Attach(void* smtcObject) {
         reinterpret_cast<PFN_GetObject>(VtableOf(updater)[kSlotGetMusicProperties])(updater,
                                                                                    &music);
     if (FAILED(hrMusic) || !music) {
-        LogF("[writer] get_MusicProperties 失败 hr=0x%08lX", static_cast<unsigned long>(hrMusic));
-        return;
+        if (!g_attachWarned) {
+            LogF("[writer] get_MusicProperties 失败 hr=0x%08lX (还没就绪，稍后重试)",
+                 static_cast<unsigned long>(hrMusic));
+            g_attachWarned = true;
+        }
+        return false;
     }
 
     g_musicV1 = Qi(music, kIidMusicDisplayProperties);
@@ -608,7 +618,7 @@ void SmtcWriter_Attach(void* smtcObject) {
     LogF("[writer] MusicProperties v1=%p v2=%p v3=%p", g_musicV1, g_musicV2, g_musicV3);
     if (!g_musicV1) {
         LogF("[writer] 拿不到 IMusicDisplayProperties，放弃");
-        return;
+        return false;
     }
 
     void** updaterVtable = VtableOf(updater);
@@ -629,4 +639,5 @@ void SmtcWriter_Attach(void* smtcObject) {
     ApplyMetadata();
     if (g_realUpdate) g_realUpdate(updater);
     LogF("[writer] 首次写入完成");
+    return true;
 }
