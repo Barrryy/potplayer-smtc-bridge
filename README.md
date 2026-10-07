@@ -210,6 +210,7 @@ Logs are written to `%TEMP%\potplayer-smtc-bridge\`. Crash dumps produced by the
 └─ tools/
    ├─ uninstall-smtc-bridge.ps1   # uninstall script
    ├─ summarize-log.py            # log summariser
+   ├─ smtc-probe/                 # read SMTC sessions back from Windows (verification)
    └─ winmd-dump/                 # interface dump from Windows.Media.winmd
 ```
 

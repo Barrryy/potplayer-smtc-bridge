@@ -210,6 +210,7 @@ python .\tools\summarize-log.py
 └─ tools/
    ├─ uninstall-smtc-bridge.ps1   # 卸载脚本
    ├─ summarize-log.py            # 日志汇总
+   ├─ smtc-probe/                 # 从系统侧读回 SMTC 会话（验证用）
    └─ winmd-dump/                 # 从 Windows.Media.winmd 导出接口定义
 ```
 

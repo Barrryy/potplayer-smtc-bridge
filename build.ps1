@@ -29,7 +29,7 @@ $commonFlags = @(
     '-static', '-static-libgcc', '-static-libstdc++'
 )
 
-Write-Host '[1/2] 构建 PotPlayerSmtcHook.dll ...' -ForegroundColor Cyan
+Write-Host '[1/6] 构建 PotPlayerSmtcHook.dll ...' -ForegroundColor Cyan
 $hookSources = @(
     "$srcDir\PotPlayerSmtcHook\dllmain.cpp",
     "$srcDir\PotPlayerSmtcHook\logger.cpp",
@@ -41,7 +41,7 @@ $hookSources = @(
 & $gxx @commonFlags -shared -o "$outDir\PotPlayerSmtcHook.dll" @hookSources -lole32 -luuid -luser32 -lshell32
 if ($LASTEXITCODE -ne 0) { throw 'DLL 构建失败' }
 
-Write-Host '[2/2] 构建 SmtcLoader.exe ...' -ForegroundColor Cyan
+Write-Host '[2/6] 构建 SmtcLoader.exe ...' -ForegroundColor Cyan
 $loaderSources = @(
     "$srcDir\SmtcLoader\main.cpp",
     "$srcDir\SmtcLoader\console.cpp"
@@ -56,7 +56,7 @@ Write-Host '用法: .\build\SmtcLoader.exe --help' -ForegroundColor Green
 
 # 前端界面（.NET 10 WinForms）也发布到 build/，与 DLL、注入器同目录
 Write-Host ''
-Write-Host '[3/4] 构建前端界面 ...' -ForegroundColor Cyan
+Write-Host '[3/6] 构建前端界面 ...' -ForegroundColor Cyan
 $dotnet = (Get-Command 'dotnet' -ErrorAction SilentlyContinue).Source
 if ($dotnet) {
     & $dotnet publish "$root\src\SmtcBridge.App\SmtcBridge.App.csproj" -c Release -o $outDir --nologo -v q
@@ -66,12 +66,23 @@ if ($dotnet) {
     Write-Host '跳过：未找到 dotnet SDK，无法构建前端界面' -ForegroundColor Yellow
 }
 
+# SMTC 探针：从系统侧读回会话，用来验证元数据是否真的写进去了
+Write-Host ''
+Write-Host '[4/6] 构建 SMTC 探针 ...' -ForegroundColor Cyan
+if ($dotnet) {
+    & $dotnet publish "$root\tools\smtc-probe\SmtcProbe.csproj" -c Release -o $outDir --nologo -v q
+    if ($LASTEXITCODE -ne 0) { throw 'SMTC 探针构建失败' }
+    Write-Host '探针已发布：build\SmtcProbe.exe' -ForegroundColor Green
+} else {
+    Write-Host '跳过：未找到 dotnet SDK，无法构建 SMTC 探针' -ForegroundColor Yellow
+}
+
 # 默认开启文件挂接：需要「当前播放文件的完整路径」这条线索来取元数据。
 # 删掉 build\PotPlayerSmtcHook.hookfiles 即可关闭。
 New-Item -ItemType File -Force -Path "$outDir\PotPlayerSmtcHook.hookfiles" | Out-Null
 
 Write-Host ''
-Write-Host '[4/5] 构建 IFEO 启动注入器 ...' -ForegroundColor Cyan
+Write-Host '[5/6] 构建 IFEO 启动注入器 ...' -ForegroundColor Cyan
 # 由 IFEO(Debugger) 在每次启动 PotPlayer 时自动拉起：用 DEBUG_ONLY_THIS_PROCESS 创建目标
 # （绕开 IFEO 二次劫持），脱离调试后注入 DLL，然后立刻退出。不常驻、不留窗口。
 # -mwindows：GUI 子系统，双击/被拉起时都不会闪控制台窗口。
@@ -80,7 +91,7 @@ if ($LASTEXITCODE -ne 0) { throw '启动注入器构建失败' }
 
 if ($Tests) {
     Write-Host ''
-    Write-Host '[4/4] 构建注入测试靶子 ...' -ForegroundColor Cyan
+    Write-Host '[6/6] 构建注入测试靶子 ...' -ForegroundColor Cyan
     $testDir = Join-Path $outDir 'test'
     New-Item -ItemType Directory -Force -Path $testDir | Out-Null
 
