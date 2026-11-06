@@ -75,9 +75,14 @@ internal sealed class SilentApp : ApplicationContext
         _busy = true;
         try
         {
-            _injectedPid = process.Id;
+            if (Injector.HookLoaded(process))
+            {
+                _injectedPid = process.Id;
+                return;
+            }
             // 传入实际进程名：用户可能装的是 PotPlayer64 / PotPlayerMini 而不是 Mini64
-            Injector.RunLoader("--name", process.ProcessName + ".exe");
+            var result = Injector.RunLoader("--name", process.ProcessName + ".exe");
+            _injectedPid = result.Ok ? process.Id : 0;
         }
         finally
         {

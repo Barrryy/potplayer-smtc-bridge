@@ -73,8 +73,10 @@ void* g_musicV3 = nullptr;
 PFN_Update g_realUpdate = nullptr;
 bool g_updateHooked = false;
 bool g_attachWarned = false;   // 失败原因只报一次，重试不打日志洪水
+void* g_updater = nullptr;
 
 CRITICAL_SECTION g_lock;
+CRITICAL_SECTION g_refreshLock;
 bool g_ready = false;
 
 wchar_t g_currentFile[MAX_PATH] = {};  // 由 CreateFileW 探针写入
@@ -425,9 +427,11 @@ DWORD WINAPI TagReaderThread(LPVOID) {
             }
             LeaveCriticalSection(&g_lock);
             LogF("[tags] %s: title=%s artist=%s album=%s track=%d genres=%s",
-        meta.fromTags ? "read tags" : "no tags, using filename", WideToUtf8(meta.title.c_str()).c_str(),
+                 meta.fromTags ? "read tags" : "no tags, using filename",
+                 WideToUtf8(meta.title.c_str()).c_str(),
                  WideToUtf8(meta.artist.c_str()).c_str(), WideToUtf8(meta.album.c_str()).c_str(),
                  meta.trackNumber, WideToUtf8(meta.genre.c_str()).c_str());
+            SmtcWriter_RefreshMetadata();
         }
         Sleep(250);
     }
@@ -507,8 +511,11 @@ void ApplyMetadata() {
 }
 
 HRESULT WINAPI Hook_Update(void* self) {
+    EnterCriticalSection(&g_refreshLock);
     ApplyMetadata();
-    return g_realUpdate(self);
+    const HRESULT hr = g_realUpdate(self);
+    LeaveCriticalSection(&g_refreshLock);
+    return hr;
 }
 
 }  // namespace
@@ -516,6 +523,7 @@ HRESULT WINAPI Hook_Update(void* self) {
 void SmtcWriter_Init() {
     if (g_ready) return;
     InitializeCriticalSection(&g_lock);
+    InitializeCriticalSection(&g_refreshLock);
     g_ready = true;
 
     // 配置文件与 DLL 同目录，由前端界面写入
@@ -581,6 +589,14 @@ void SmtcWriter_SetCurrentFile(const wchar_t* path) {
     (void)changed;
 }
 
+void SmtcWriter_RefreshMetadata() {
+    if (!g_ready || !g_realUpdate || !g_updater) return;
+    EnterCriticalSection(&g_refreshLock);
+    ApplyMetadata();
+    g_realUpdate(g_updater);
+    LeaveCriticalSection(&g_refreshLock);
+}
+
 bool SmtcWriter_Attach(void* smtcObject) {
     if (!smtcObject) return false;
     if (!g_ready) SmtcWriter_Init();
@@ -629,6 +645,7 @@ bool SmtcWriter_Attach(void* smtcObject) {
         g_realUpdate = reinterpret_cast<PFN_Update>(updaterVtable[kSlotUpdaterUpdate]);
         updaterVtable[kSlotUpdaterUpdate] = reinterpret_cast<void*>(&Hook_Update);
         VirtualProtect(&updaterVtable[kSlotUpdaterUpdate], sizeof(void*), oldProtect, &oldProtect);
+        g_updater = updater;
         g_updateHooked = true;
         LogF("[writer] 已挂钩 DisplayUpdater::Update (vtable[%d])", kSlotUpdaterUpdate);
     }
@@ -636,8 +653,7 @@ bool SmtcWriter_Attach(void* smtcObject) {
     HANDLE tagThread = CreateThread(nullptr, 0, TagReaderThread, nullptr, 0, nullptr);
     if (tagThread) CloseHandle(tagThread);
 
-    ApplyMetadata();
-    if (g_realUpdate) g_realUpdate(updater);
+    SmtcWriter_RefreshMetadata();
     LogF("[writer] 首次写入完成");
     return true;
 }

@@ -24,6 +24,29 @@ internal static class Program
                 quiet: args.Contains("--quiet")));
             return;
         }
+        if (args.Length >= 1 && args[0] == "--enable-background")
+        {
+            Environment.Exit(RunOneShot(() =>
+            {
+                var config = BridgeConfig.Load();
+                config.AutoStart = true;
+                config.Save();
+                if (!Injector.SetAutoStart(true))
+                    throw new UnauthorizedAccessException("无法写入当前用户的启动项。");
+            }, "Background auto-inject enabled.  ·  后台自动注入已启用", quiet: true));
+            return;
+        }
+        if (args.Length >= 1 && args[0] == "--disable-background")
+        {
+            Environment.Exit(RunOneShot(() =>
+            {
+                var config = BridgeConfig.Load();
+                config.AutoStart = false;
+                config.Save();
+                Injector.SetAutoStart(false);
+            }, "Background auto-inject disabled.  ·  后台自动注入已关闭", quiet: true));
+            return;
+        }
 
         if (args.Length >= 2 && args[0] == "--patch")
         {

@@ -360,6 +360,11 @@ DWORD WINAPI AttachThread(LPVOID) {
         void* smtc = InterlockedCompareExchangePointer(&g_capturedSmtc, nullptr, nullptr);
         bool fromMainWindow = false;
 
+        if (!smtc && g_mainWindowSmtc) {
+            smtc = g_mainWindowSmtc;
+            fromMainWindow = true;
+        }
+
         if (!smtc && !triedMainWindow && attempt * kRetryIntervalMs >= kMainWindowFallbackDelayMs) {
             triedMainWindow = true;   // 只试一次
             if (g_activationSeen && !g_getForWindowSeen) {

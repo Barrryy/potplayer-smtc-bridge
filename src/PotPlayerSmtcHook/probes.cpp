@@ -7,6 +7,7 @@
 #include <string>
 #include <vector>
 
+#include "file_handle_probe.h"
 #include "logger.h"
 #include "pe_utils.h"
 #include "smtc_capture.h"
@@ -25,6 +26,13 @@ const std::vector<std::wstring> kTargetModules = {
     L"PotPlayer.dll",
     L"MediaDB64.dll",
     L"MediaDB.dll",
+    // 26.10 之后的媒体读取经过这些后加载模块（或它们的 CRT）。
+    // 这些名字只用于给 CreateFileW/CreateFile2 补 IAT。
+    L"MediaInfo64.dll",
+    L"ffcodec64.dll",
+    L"FFmpegMininum64.dll",
+    L"msvcrt.dll",
+    L"ucrtbase.dll",
 };
 
 // ---------------------------------------------------------------------------
@@ -76,7 +84,9 @@ HRESULT WINAPI Hook_RoActivateInstance(void* classId, void** instance) {
 
 typedef HANDLE(WINAPI* PFN_CreateFileW)(LPCWSTR, DWORD, DWORD, LPSECURITY_ATTRIBUTES, DWORD,
                                         DWORD, HANDLE);
+typedef HANDLE(WINAPI* PFN_CreateFile2)(LPCWSTR, DWORD, DWORD, DWORD, const void*);
 PFN_CreateFileW Real_CreateFileW = nullptr;
+PFN_CreateFile2 Real_CreateFile2 = nullptr;
 
 const wchar_t* kMediaExts[] = {
     L".mp3", L".flac", L".wav",  L".m4a", L".aac", L".ogg",  L".opus", L".wma",
@@ -117,6 +127,20 @@ HANDLE WINAPI Hook_CreateFileW(LPCWSTR fileName, DWORD access, DWORD share,
         SmtcWriter_SetCurrentFile(fileName);
         LogTagW("  [open]", fileName);
         LogF("         -> handle=%p err=%lu", handle, GetLastError());
+    }
+    return handle;
+}
+
+HANDLE WINAPI Hook_CreateFile2(LPCWSTR fileName, DWORD access, DWORD share, DWORD creation,
+                               const void* extendedParameters) {
+    const HANDLE handle = Real_CreateFile2
+                              ? Real_CreateFile2(fileName, access, share, creation,
+                                                 extendedParameters)
+                              : INVALID_HANDLE_VALUE;
+    if (IsMediaPath(fileName)) {
+        SmtcWriter_SetCurrentFile(fileName);
+        LogTagW("  [open2]", fileName);
+        LogF("          -> handle=%p err=%lu", handle, GetLastError());
     }
     return handle;
 }
@@ -267,6 +291,8 @@ int TryPatchModule(HMODULE module, const std::wstring& name, bool assumeResolved
     if (g_fileHooks) {
         apply("CreateFileW", reinterpret_cast<void*>(&Hook_CreateFileW),
               reinterpret_cast<void**>(&Real_CreateFileW));
+        apply("CreateFile2", reinterpret_cast<void*>(&Hook_CreateFile2),
+              reinterpret_cast<void**>(&Real_CreateFile2));
     }
 
     if (patched > 0) {
@@ -424,6 +450,29 @@ void InstallProbes() {
     g_fileHooks = FileHookEnabled();
     if (!g_fileHooks) {
         LogF("[probe] CreateFileW 挂接未启用（在 DLL 同目录放置 PotPlayerSmtcHook.hookfiles 可开启）");
+    } else {
+        // CreateFile 钩子负责即时捕获；句柄扫描负责兜住新版播放器绕开这些
+        // 导出、由已解析的系统模块打开文件的路径。
+        FileHandleProbe_Start();
+
+        // PotPlayer 26.10 之后把媒体打开移到了后加载模块，而且部分导入描述符
+        // 没有 OriginalFirstThunk，按名称补 IAT 会漏掉。这里同时改
+        // kernelbase 的导出表，之后加载的模块无论走导入解析还是
+        // GetProcAddress 都会拿到钩子。CreateFile2 是新版实际使用的那条 API。
+        HMODULE kernelbase = GetModuleHandleW(L"kernelbase.dll");
+        if (!kernelbase) kernelbase = LoadLibraryW(L"kernelbase.dll");
+        if (kernelbase) {
+            void* exportOriginal = nullptr;
+            if (PatchExportInModule(kernelbase, "CreateFile2",
+                                    reinterpret_cast<void*>(&Hook_CreateFile2),
+                                    &exportOriginal)) {
+                Real_CreateFile2 =
+                    reinterpret_cast<PFN_CreateFile2>(exportOriginal);
+                LogF("[probe] kernelbase CreateFile2 导出表已改写");
+            } else {
+                LogF("[probe] kernelbase CreateFile2 导出表改写失败，退回目标模块 IAT");
+            }
+        }
     }
 
     // 必须在装文件探针之前就绪，否则最早那批路径上报会被丢掉

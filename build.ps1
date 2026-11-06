@@ -32,6 +32,7 @@ $commonFlags = @(
 Write-Host '[1/5] 构建 PotPlayerSmtcHook.dll ...' -ForegroundColor Cyan
 $hookSources = @(
     "$srcDir\PotPlayerSmtcHook\dllmain.cpp",
+    "$srcDir\PotPlayerSmtcHook\file_handle_probe.cpp",
     "$srcDir\PotPlayerSmtcHook\logger.cpp",
     "$srcDir\PotPlayerSmtcHook\pe_utils.cpp",
     "$srcDir\PotPlayerSmtcHook\probes.cpp",

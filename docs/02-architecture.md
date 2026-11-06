@@ -10,12 +10,13 @@
 │        │                        │                                 │
 │        │ 打开媒体文件            │ 属性写入                          │
 │        ▼                        ▼                                 │
-│   CreateFileW ◄──挂接      ISystemMediaTransportControls           │
-│        │                        ▲                                 │
-│        │ 记录路径                │ 补写字段                          │
-│        └────────► [PotPlayerSmtcHook.dll] ─────┘                   │
-│                        │                                          │
-│                        │ 读取标签（TagLib）                        │
+│ CreateFileW / CreateFile2       ISystemMediaTransportControls      │
+│        │  ◄── 挂接                   ▲                             │
+│        │                             │ 补写字段                     │
+│        ├────────► [PotPlayerSmtcHook.dll] ─────┘                   │
+│        │                   │                                      │
+│  扫描文件句柄              │ 读取 Windows 属性系统标签              │
+│        └───────────────────┘                                      │
 │                        ▼                                          │
 └────────────────────────┼──────────────────────────────────────────┘
                          │
@@ -59,20 +60,28 @@ ISystemMediaTransportControlsInterop::GetForWindow(hwnd, iid, ppv)
 
 ## 当前播放文件路径的获取
 
-**主方案：挂接 `CreateFileW` + 文件名关联**
+**即时路径：挂接 `CreateFileW` / `CreateFile2`**
 
-1. 记录所有扩展名为媒体格式的打开路径（环形缓冲，保留最近 N 条）；
-2. 当 SMTC 的 Title 更新为 `X.mp3` 时，取 basename 等于 `X.mp3` 的最近一条。
+目标播放器模块和各新版媒体模块里的文件导入会立即上报媒体路径。新版
+PotPlayer 的部分文件读取由更早加载、已经解析完导入的 CRT 或系统模块完成，
+因此这条路径不再是唯一来源。
 
-关联键天然精确：PotPlayer 写入 SMTC 的 Title 就是"带扩展名的文件名"。
+**兜底路径：扫描进程自己的文件句柄**
 
-**兜底方案：进程内内存扫描**
+每 250 ms 通过 `NtQuerySystemInformation(SystemExtendedHandleInformation)`
+枚举当前进程的句柄，只复制文件类型句柄并用
+`GetFinalPathNameByHandleW` 解析路径。这样不依赖 PotPlayer 最终通过哪一个
+文件 API 打开媒体，也能覆盖启动时已经打开、注入后才开始处理的文件。
 
-已知文件名，扫描已提交内存中的 UTF-16 字符串，寻找以该文件名结尾、且含盘符与反斜杠的更长子串。需要三重校验：文件存在、扩展名合法、与当前 Title 一致。
+若有多个媒体句柄同时存在，优先选择与 PotPlayer 主窗口标题中的文件名/主文件名
+匹配的一项；切歌时再优先选择新出现的句柄。
 
 ## 写入时机
 
-补写必须在 PotPlayer 自己调用 `ISystemMediaTransportControlsDisplayUpdater::Update()` **之后**执行，否则会被它覆盖。因此需要挂接该方法的 vtable 槽位。
+补写必须在 PotPlayer 自己调用 `ISystemMediaTransportControlsDisplayUpdater::Update()`
+**之前**写入 MusicProperties，再调用原 `Update()` 提交。因此挂接该方法的 vtable
+槽位。路径或标签线程发现新信息时也会主动执行一次同样的提交，不依赖宿主下一次
+切歌或刷新。
 
 ## 元数据解析
 

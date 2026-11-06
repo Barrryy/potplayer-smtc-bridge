@@ -382,14 +382,8 @@ internal sealed class MainForm : Form
         var inject = Theme.GhostButton(Loc.T("注入到运行中的 PotPlayer"));
         inject.Click += (_, _) => InjectRunning();
 
-        var watch = Theme.GhostButton(Loc.T("后台监听"));
-        watch.Click += (_, _) =>
-        {
-            var process = Injector.StartWatch();
-            AppendLog(process is null
-                ? "启动监听失败。"
-                : $"监听已启动（PID {process.Id}）：PotPlayer 启动时自动注入。");
-        };
+        var watch = Theme.GhostButton(Loc.T("启用后台自动注入"));
+        watch.Click += (_, _) => EnableBackgroundAutoInject();
 
         var openLog = Theme.GhostButton(Loc.T("打开日志目录"));
         openLog.Click += (_, _) =>
@@ -627,6 +621,18 @@ internal sealed class MainForm : Form
         RefreshPatchState();
     }
 
+    private void EnableBackgroundAutoInject()
+    {
+        _config.AutoStart = true;
+        _config.Save();
+        if (!Injector.SetAutoStart(true))
+        {
+            AppendLog("启用后台自动注入失败：无法写入当前用户的启动项。");
+            return;
+        }
+        AppendLog("后台自动注入已启用：本程序会静默运行，并在 PotPlayer 每次启动时注入。");
+    }
+
     private Card BuildActionsCard()
     {
         var card = new Card("操作");
@@ -642,14 +648,8 @@ internal sealed class MainForm : Form
         var inject = Theme.GhostButton(Loc.T("注入到已运行的 PotPlayer"));
         inject.Click += (_, _) => InjectRunning();
 
-        var watch = Theme.GhostButton(Loc.T("后台监听"));
-        watch.Click += (_, _) =>
-        {
-            var process = Injector.StartWatch();
-            AppendLog(process is null
-                ? "启动监听失败。"
-                : $"监听已启动（PID {process.Id}）：PotPlayer 启动时将自动注入。");
-        };
+        var watch = Theme.GhostButton(Loc.T("启用后台自动注入"));
+        watch.Click += (_, _) => EnableBackgroundAutoInject();
 
         var openLog = Theme.GhostButton(Loc.T("打开日志目录"));
         openLog.Click += (_, _) =>
@@ -676,6 +676,9 @@ internal sealed class MainForm : Form
             exit.Click += (_, _) =>
             {
                 AppendLog("正在退出后台进程…");
+                _config.AutoStart = false;
+                _config.Save();
+                Injector.SetAutoStart(false);
                 _onExit();
             };
             row2.Controls.Add(exit);

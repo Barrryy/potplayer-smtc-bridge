@@ -157,6 +157,8 @@ Properties are cleared when the next track does not provide a value, so metadata
 | `PotPlayerSmtcBridge.exe --silent` | Runs without a window until signalled |
 | `PotPlayerSmtcBridge.exe --install-ifeo <player.exe>` | Installs the IFEO rule (elevated) |
 | `PotPlayerSmtcBridge.exe --uninstall-ifeo <player.exe>` | Removes the IFEO rule (elevated) |
+| `PotPlayerSmtcBridge.exe --enable-background` | Enables background injection and current-user auto-start |
+| `PotPlayerSmtcBridge.exe --disable-background` | Disables the background injection auto-start |
 | `PotPlayerSmtcBridge.exe --restore <player.exe>` | Restores a player executable modified by v0.6 (elevated) |
 | `SmtcLoader.exe --name <process>` | Injects the hook module into a running process |
 | `SmtcLoader.exe --launch <player.exe>` | Starts the player suspended and injects during startup |

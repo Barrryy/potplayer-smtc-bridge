@@ -157,6 +157,8 @@ Remove-Item 'HKLM:\SOFTWARE\Microsoft\Windows NT\CurrentVersion\Image File Execu
 | `PotPlayerSmtcBridge.exe --silent` | 无窗口运行，直到收到唤醒信号 |
 | `PotPlayerSmtcBridge.exe --install-ifeo <播放器.exe>` | 安装 IFEO 规则（需要提权） |
 | `PotPlayerSmtcBridge.exe --uninstall-ifeo <播放器.exe>` | 移除 IFEO 规则（需要提权） |
+| `PotPlayerSmtcBridge.exe --enable-background` | 启用后台自动注入与当前用户自启动 |
+| `PotPlayerSmtcBridge.exe --disable-background` | 关闭后台自动注入自启动 |
 | `PotPlayerSmtcBridge.exe --restore <播放器.exe>` | 还原被 v0.6 修改过的播放器主程序（需要提权） |
 | `SmtcLoader.exe --name <进程名>` | 注入到已运行的进程 |
 | `SmtcLoader.exe --launch <播放器.exe>` | 挂起启动播放器并在启动阶段注入 |

@@ -64,9 +64,33 @@ internal static class Injector
             WorkingDirectory = AppPaths.AppDir,
             UseShellExecute = false,
             CreateNoWindow = true,
-            Arguments = "--watch",
         };
+        info.ArgumentList.Add("--watch");
+        if (File.Exists(AppPaths.RuntimeHookDll))
+        {
+            info.ArgumentList.Add("--dll");
+            info.ArgumentList.Add(AppPaths.RuntimeHookDll);
+        }
         try { return Process.Start(info); } catch { return null; }
+    }
+
+    /// <summary>已经由方式一注入过的进程不再重复注入。</summary>
+    public static bool HookLoaded(Process process)
+    {
+        try
+        {
+            foreach (ProcessModule module in process.Modules)
+            {
+                if (!string.Equals(module.ModuleName, "PotPlayerSmtcHook.dll",
+                                   StringComparison.OrdinalIgnoreCase)) continue;
+                return true;
+            }
+        }
+        catch
+        {
+            // 进程权限或位数不匹配时无法枚举，交给 Loader 自己处理。
+        }
+        return false;
     }
 
     public static bool IsPotPlayerRunning() =>
@@ -103,7 +127,7 @@ internal static class Injector
     {
         try
         {
-            using var key = Registry.CurrentUser.OpenSubKey(AutoStartKey, writable: true);
+            using var key = Registry.CurrentUser.CreateSubKey(AutoStartKey, writable: true);
             if (key is null) return false;
             if (enable)
                 // 注册界面程序自己，并明确带上 --silent：

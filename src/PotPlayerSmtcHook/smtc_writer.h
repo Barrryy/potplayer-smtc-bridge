@@ -14,6 +14,9 @@ void SmtcWriter_SetCurrentFile(const wchar_t* path);
 // 必须在安装 CreateFileW 探针之前调用（否则早期上报的路径会被丢弃）
 void SmtcWriter_Init();
 
+// 路径变化后主动提交一次元数据，不必等宿主再次调用 Update。
+void SmtcWriter_RefreshMetadata();
+
 // 重新读取 PotPlayerSmtcHook.ini（前端保存设置后调用，可不重启播放器生效）
 void SmtcWriter_ReloadConfig();
 
