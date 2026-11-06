@@ -9,6 +9,8 @@
     <LangVersion>latest</LangVersion>
     <AssemblyName>PotPlayerSmtcBridge</AssemblyName>
     <RootNamespace>SmtcBridge</RootNamespace>
+    <Version>0.8.4</Version>
+    <FileVersion>0.8.4.0</FileVersion>
     <ApplicationManifest>app.manifest</ApplicationManifest>
   </PropertyGroup>
 

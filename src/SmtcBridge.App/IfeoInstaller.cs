@@ -74,6 +74,40 @@ internal static class IfeoInstaller
                       StringComparison.OrdinalIgnoreCase) &&
         File.Exists(AppPaths.InstalledInjector);
 
+    /// <summary>固定安装目录里的注入文件是否和当前程序自带的版本一致。</summary>
+    public static bool PayloadMatchesCurrent()
+    {
+        try
+        {
+            return FilesEqual(AppPaths.HookDll,
+                              Path.Combine(AppPaths.InstallDir, HookDllName)) &&
+                   FilesEqual(AppPaths.InjectorExe, AppPaths.InstalledInjector);
+        }
+        catch
+        {
+            return false;
+        }
+    }
+
+    /// <summary>刷新本地安装目录里的文件；不需要再写 IFEO 时无需管理员权限。</summary>
+    public static bool RefreshPayload()
+    {
+        try
+        {
+            Directory.CreateDirectory(AppPaths.InstallDir);
+            File.Copy(AppPaths.InjectorExe, AppPaths.InstalledInjector, overwrite: true);
+            File.Copy(AppPaths.HookDll, Path.Combine(AppPaths.InstallDir, HookDllName),
+                      overwrite: true);
+            File.WriteAllBytes(Path.Combine(AppPaths.InstallDir, MarkerName),
+                               Array.Empty<byte>());
+            return PayloadMatchesCurrent();
+        }
+        catch
+        {
+            return false;
+        }
+    }
+
     /// <summary>
     /// 装过，但注册表指向的路径已经不是当前安装目录（本程序目录挪过，或者装的是别的副本）
     /// 时返回那条陈旧路径 —— 这种情况下 PotPlayer 会去拉起一个不存在的注入器，也就打不开。
@@ -140,6 +174,22 @@ internal static class IfeoInstaller
         key.SetValue(MarkerValue, AppPaths.InstallDir, RegistryValueKind.String);
     }
 
+    /// <summary>把已有的启动规则迁移到新的 PotPlayer 路径。需要管理员权限。</summary>
+    public static void Move(string oldExePath, string newExePath)
+    {
+        if (!File.Exists(newExePath))
+            throw new FileNotFoundException("找不到新的 PotPlayer 主程序", newExePath);
+
+        var oldInstalled = IsInstalledByUs(oldExePath);
+        if (!oldInstalled) return;
+
+        var sameImageName = string.Equals(Path.GetFileName(oldExePath),
+                                          Path.GetFileName(newExePath),
+                                          StringComparison.OrdinalIgnoreCase);
+        Install(newExePath);
+        if (!sameImageName) DeleteOwnRule(oldExePath);
+    }
+
     /// <summary>删掉自己写的 IFEO 键与安装目录。别人的占用不动。需要管理员权限。</summary>
     public static bool Remove(string exePath)
     {
@@ -165,5 +215,22 @@ internal static class IfeoInstaller
         }
 
         return true;
+    }
+
+    private static void DeleteOwnRule(string exePath)
+    {
+        using (var key = Registry.LocalMachine.OpenSubKey(SubKeyFor(exePath), writable: true))
+        {
+            if (key is null || key.GetValue(MarkerValue) is null) return;
+        }
+        Registry.LocalMachine.DeleteSubKeyTree(SubKeyFor(exePath), throwOnMissingSubKey: false);
+    }
+
+    private static bool FilesEqual(string left, string right)
+    {
+        if (!File.Exists(left) || !File.Exists(right)) return false;
+        var leftBytes = File.ReadAllBytes(left);
+        var rightBytes = File.ReadAllBytes(right);
+        return leftBytes.AsSpan().SequenceEqual(rightBytes);
     }
 }

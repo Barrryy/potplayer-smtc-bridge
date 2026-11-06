@@ -31,6 +31,8 @@ build\PotPlayerSmtcBridge.exe
 
 Launch PotPlayer and play any file. The Windows media panel — and every other SMTC consumer — now shows the full title, artist, album, track number, genre and artwork.
 
+If PotPlayer moves, edit the executable path directly in the **Status** card, then click **Save path**.
+
 ### Uninstall
 
 Select **Uninstall injection** in the GUI, or delete the registry key:
@@ -159,6 +161,7 @@ Properties are cleared when the next track does not provide a value, so metadata
 | `PotPlayerSmtcBridge.exe --uninstall-ifeo <player.exe>` | Removes the IFEO rule (elevated) |
 | `PotPlayerSmtcBridge.exe --enable-background` | Enables background injection and current-user auto-start |
 | `PotPlayerSmtcBridge.exe --disable-background` | Disables the background injection auto-start |
+| `PotPlayerSmtcBridge.exe --move-ifeo <old.exe> <new.exe>` | Moves the startup injection to a new PotPlayer path (elevated) |
 | `PotPlayerSmtcBridge.exe --restore <player.exe>` | Restores a player executable modified by v0.6 (elevated) |
 | `SmtcLoader.exe --name <process>` | Injects the hook module into a running process |
 | `SmtcLoader.exe --launch <player.exe>` | Starts the player suspended and injects during startup |

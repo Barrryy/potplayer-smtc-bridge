@@ -8,7 +8,7 @@ internal sealed class MainForm : Form
     private readonly Action? _onExit;
     private readonly FlowLayoutPanel _stack = new();
 
-    private readonly Label _pathValue = Theme.Label("未指定", Theme.TextDim);
+    private readonly DarkInput _potPlayerPath = new();
     private readonly Label _stateValue = Theme.Label("检查中…", Theme.TextDim);
     private readonly CheckBox _tagFirst = Theme.CheckBox("标签优先，文件名兜底", true);
     private readonly DarkInput _pattern = new();
@@ -53,6 +53,7 @@ internal sealed class MainForm : Form
         Controls.Add(_stack);
 
         _loading = true;
+        _potPlayerPath.Text = _config.PotPlayerPath;
         _tagFirst.Checked = _config.TagFirst;
         _pattern.Text = _config.NamePattern;
         _sample.Text = "洛天依 - 上山岗.mp3";
@@ -73,6 +74,8 @@ internal sealed class MainForm : Form
         base.OnShown(e);
         ResizeCards();
         AppendLog("就绪。点击「启动并注入」会自动拉起 PotPlayer 并完成注入。");
+        var upgradeReport = UpgradeManager.TakeReport();
+        if (!string.IsNullOrEmpty(upgradeReport)) AppendLog(upgradeReport);
     }
 
     /// <summary>
@@ -134,37 +137,35 @@ internal sealed class MainForm : Form
     private Card BuildStatusCard()
     {
         var card = new Card("状态");
+        card.AddRow(Field("PotPlayer 路径", _potPlayerPath), 0);
+
         var grid = new TableLayoutPanel
         {
-            ColumnCount = 2,
+            ColumnCount = 1,
             AutoSize = true,
             AutoSizeMode = AutoSizeMode.GrowAndShrink,
             BackColor = Theme.Surface,
             Margin = new Padding(0),
         };
         grid.ColumnStyles.Add(new ColumnStyle(SizeType.AutoSize));
-        grid.ColumnStyles.Add(new ColumnStyle(SizeType.AutoSize));
-        grid.RowStyles.Add(new RowStyle(SizeType.AutoSize));
         grid.RowStyles.Add(new RowStyle(SizeType.AutoSize));
 
-        var pathCaption = Theme.Label("PotPlayer", Theme.TextDim);
-        pathCaption.Margin = new Padding(0, 0, 16, 0);
-        grid.Controls.Add(pathCaption, 0, 0);
-        grid.Controls.Add(_pathValue, 1, 0);
-
-        var stateCaption = Theme.Label("当前状态", Theme.TextDim);
-        stateCaption.Margin = new Padding(0, 6, 16, 0);
         _stateValue.Margin = new Padding(0, 6, 0, 0);
-        grid.Controls.Add(stateCaption, 0, 1);
-        grid.Controls.Add(_stateValue, 1, 1);
+        grid.Controls.Add(_stateValue, 0, 0);
 
         card.AddRow(grid, 0);
 
         var row = Theme.Row(Theme.Surface);
+        var browse = Theme.GhostButton("浏览…");
+        browse.Click += (_, _) => BrowseForPotPlayer();
+        var save = Theme.PrimaryButton("保存路径");
+        save.Click += (_, _) => SavePotPlayerPath();
         var refresh = Theme.GhostButton("刷新状态");
         refresh.Click += (_, _) => RefreshStatus();
         var change = Theme.GhostButton("重新检测 PotPlayer");
         change.Click += (_, _) => DetectAndStore();
+        row.Controls.Add(browse);
+        row.Controls.Add(save);
         row.Controls.Add(refresh);
         row.Controls.Add(change);
         card.AddRow(row, 12);
@@ -174,8 +175,7 @@ internal sealed class MainForm : Form
     private void RefreshStatus()
     {
         var path = _config.PotPlayerPath;
-        _pathValue.Text = string.IsNullOrEmpty(path) ? "未指定" : path;
-        _pathValue.ForeColor = string.IsNullOrEmpty(path) ? Theme.Warn : Theme.Text;
+        if (!_potPlayerPath.Box.Focused) _potPlayerPath.Text = path;
 
         var running = Injector.IsPotPlayerRunning();
         var ready = Injector.ComponentReady;
@@ -193,10 +193,84 @@ internal sealed class MainForm : Form
             AppendLog("未找到 PotPlayer，请手动指定。");
             return;
         }
-        _config.PotPlayerPath = found;
+        _potPlayerPath.Text = found;
+        SavePotPlayerPath("自动检测");
+    }
+
+    private void BrowseForPotPlayer()
+    {
+        using var dialog = new OpenFileDialog
+        {
+            Filter = "PotPlayer|PotPlayer*.exe|所有程序|*.exe",
+            Title = Loc.T("选择 PotPlayer 主程序"),
+        };
+        var current = _potPlayerPath.Text.Trim();
+        var dir = Path.GetDirectoryName(current);
+        if (!string.IsNullOrEmpty(dir) && Directory.Exists(dir)) dialog.InitialDirectory = dir;
+        if (dialog.ShowDialog(this) == DialogResult.OK) _potPlayerPath.Text = dialog.FileName;
+    }
+
+    private void SavePotPlayerPath(string source = "手动选择")
+    {
+        var path = _potPlayerPath.Text.Trim().Trim('"');
+        if (path.Length == 0 || !File.Exists(path))
+        {
+            AppendLog("PotPlayer 路径无效：文件不存在。");
+            return;
+        }
+        if (!Path.GetFileName(path).StartsWith("PotPlayer", StringComparison.OrdinalIgnoreCase))
+        {
+            var answer = MessageBox.Show(this,
+                "The selected file does not look like a PotPlayer executable. Save it anyway?\n"
+                + "选中的文件看起来不是 PotPlayer 主程序，仍要保存吗？",
+                "Confirm path · 确认路径", MessageBoxButtons.YesNo, MessageBoxIcon.Warning,
+                MessageBoxDefaultButton.Button2);
+            if (answer != DialogResult.Yes) return;
+        }
+
+        var oldPath = _config.PotPlayerPath;
+        _config.PotPlayerPath = path;
+        _config.Registered = true;
         _config.Save();
-        AppendLog($"已定位 PotPlayer：{found}");
+        _potPlayerPath.Text = path;
         RefreshStatus();
+        AppendLog($"{source}：PotPlayer 路径已保存：{path}");
+
+        if (!string.IsNullOrEmpty(oldPath) &&
+            !string.Equals(oldPath, path, StringComparison.OrdinalIgnoreCase) &&
+            IfeoInstaller.IsInstalledByUs(oldPath))
+        {
+            MigrateIfeo(oldPath, path);
+        }
+        RefreshPatchState();
+    }
+
+    private void MigrateIfeo(string oldPath, string newPath)
+    {
+        if (string.Equals(Path.GetFileName(oldPath), Path.GetFileName(newPath),
+                          StringComparison.OrdinalIgnoreCase)) {
+            AppendLog("启动注入按程序名注册，新路径无需额外迁移。");
+            return;
+        }
+
+        try
+        {
+            using var process = Process.Start(new ProcessStartInfo
+            {
+                FileName = AppPaths.SelfExe,
+                Arguments = $"--move-ifeo \"{oldPath}\" \"{newPath}\" --quiet",
+                UseShellExecute = true,
+                Verb = "runas",
+            });
+            process?.WaitForExit();
+            AppendLog(process?.ExitCode == 0
+                ? "启动注入已迁移到新的 PotPlayer 路径。"
+                : "启动注入迁移未完成，请重新点击「安装启动注入」。");
+        }
+        catch (Exception ex)
+        {
+            AppendLog("启动注入迁移失败：" + ex.Message);
+        }
     }
 
     // ---------------------------------------------------------------- 规则
@@ -503,6 +577,14 @@ internal sealed class MainForm : Form
             {
                 _patchState.Text += "\nIncomplete install — missing in the install folder: " + missing
                                   + "\n安装不完整 —— 安装目录里缺失文件：" + missing;
+                _patchState.ForeColor = Theme.Warn;
+                return;
+            }
+            if (!IfeoInstaller.PayloadMatchesCurrent())
+            {
+                _patchState.Text +=
+                    "\nInstalled files are not from v0.8.4. Exit PotPlayer, then click Install injection again."
+                    + "\n固定安装目录里不是 v0.8.4 的文件。请完全退出 PotPlayer，再重新点击「安装启动注入」。";
                 _patchState.ForeColor = Theme.Warn;
                 return;
             }

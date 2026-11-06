@@ -7,6 +7,7 @@ internal static class Program
     {
         ApplicationConfiguration.Initialize();
         Loc.AutoApply();
+        var silent = args.Any(a => a.Equals("--silent", StringComparison.OrdinalIgnoreCase));
 
         // 提权后的一次性操作：给 PotPlayer 打导入表补丁 / 还原
         // 新的安装方式：IFEO 启动注入（不改动 PotPlayer 的任何文件）
@@ -47,6 +48,13 @@ internal static class Program
             }, "Background auto-inject disabled.  ·  后台自动注入已关闭", quiet: true));
             return;
         }
+        if (args.Length >= 3 && args[0] == "--move-ifeo")
+        {
+            Environment.Exit(RunOneShot(() => IfeoInstaller.Move(args[1], args[2]),
+                "Injection moved to the new PotPlayer path.  ·  启动注入已迁移到新路径",
+                quiet: args.Contains("--quiet")));
+            return;
+        }
 
         if (args.Length >= 2 && args[0] == "--patch")
         {
@@ -63,12 +71,15 @@ internal static class Program
             return;
         }
 
+        if (!UpgradeManager.Prepare(silent)) return;
+
         // .NET 9+ 的 WinForms 深色模式：让系统绘制的部分（滚动条、复选框等）也跟随深色。
         // 老系统上不可用，忽略即可。
         try { Application.SetColorMode(SystemColorMode.Dark); }
         catch { /* 不支持就退化为纯手工配色 */ }
 
         var config = BridgeConfig.Load();
+        UpgradeManager.Integrate(config);
 
         // 只有第一次使用（或组件缺失）才弹向导；之后一律静默驻留。
         var justRegistered = false;
@@ -82,8 +93,6 @@ internal static class Program
 
         // 双击（无参数）默认把主界面开出来——用户手动运行就该看到东西。
         // 只有开机自启项才带 --silent，那种情况才真正静默。
-        var silent = args.Any(a => a.Equals("--silent", StringComparison.OrdinalIgnoreCase));
-
         // 只允许一个后台实例；已有实例在跑时，--ui 只是把它叫出来
         var mutex = SilentApp.TryAcquireSingleInstance();
         if (mutex is null)

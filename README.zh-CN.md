@@ -31,6 +31,8 @@ build\PotPlayerSmtcBridge.exe
 
 正常启动 PotPlayer 并播放任意文件。Windows 媒体浮窗以及其他所有读取 SMTC 的程序即可看到完整的标题、歌手、专辑、曲目号、流派与封面。
 
+如果 PotPlayer 安装位置发生变化，直接在主界面「状态」卡片里浏览或输入新的主程序路径，再点「保存路径」即可。
+
 ### 卸载
 
 在界面中点击「卸载启动注入」，或删除注册表键：
@@ -159,6 +161,7 @@ Remove-Item 'HKLM:\SOFTWARE\Microsoft\Windows NT\CurrentVersion\Image File Execu
 | `PotPlayerSmtcBridge.exe --uninstall-ifeo <播放器.exe>` | 移除 IFEO 规则（需要提权） |
 | `PotPlayerSmtcBridge.exe --enable-background` | 启用后台自动注入与当前用户自启动 |
 | `PotPlayerSmtcBridge.exe --disable-background` | 关闭后台自动注入自启动 |
+| `PotPlayerSmtcBridge.exe --move-ifeo <旧exe> <新exe>` | 把启动注入迁移到新的 PotPlayer 路径（需要提权） |
 | `PotPlayerSmtcBridge.exe --restore <播放器.exe>` | 还原被 v0.6 修改过的播放器主程序（需要提权） |
 | `SmtcLoader.exe --name <进程名>` | 注入到已运行的进程 |
 | `SmtcLoader.exe --launch <播放器.exe>` | 挂起启动播放器并在启动阶段注入 |
